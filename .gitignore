@@ -1,0 +1,5 @@
+*.pyc
+*.swp
+*.swo
+datastorer_service.egg-info/*
+*.db
