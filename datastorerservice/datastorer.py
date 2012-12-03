@@ -5,11 +5,16 @@ import ckanserviceprototype.job as job
 import ckanserviceprototype.util as util
 
 
-@job.sync
-def echo(task_id, input):
-    if input['data'].startswith('>'):
-        raise util.JobError('do not start message with >')
-    return '>' + input['data']
+#@job.sync
+#def echo(task_id, input):
+#    if input['data'].startswith('>'):
+#        raise util.JobError('do not start message with >')
+#    return '>' + input['data']
+
+
+@job.async
+def upload(task_id, input):
+    pass
 
 
 if __name__ == '__main__':
