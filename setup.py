@@ -18,7 +18,9 @@ setup(name='datastorer-service',
       include_package_data=True,
       zip_safe=False,
       install_requires=['''
-            ckan-service-prototype'''
+            ckan-service-prototype,
+            messytables,
+            Requests'''
       ],
       entry_points="""
       # -*- Entry points: -*-

@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import time
 import ConfigParser
 
 import requests
@@ -75,34 +76,73 @@ class TestWeb():
                                            job_types=['upload'],
                                            name='datastorer'), rv.data
 
-    def test_csv_file(self):
-
-        data = {'url': 'http://0.0.0.0:50001/static/simple.csv',
-                'format': 'csv',
-                'id': 'uuid1'}
-
-        context = {'site_url': 'http://%s' % self.host,
-                   'site_user_apikey': self.api_key,
-                   'apikey': self.api_key}
-
+    def test_csv_directly(self):
         resource_id = self.make_resource_id()
-        data['id'] = resource_id
 
-        # good job
-        rv = app.post('/job',
-                      data=json.dumps({"job_type": "upload",
-                                       "data": {
-                                            'context': json.dumps(context),
-                                            'data': json.dumps(data)}}),
-                      content_type='application/json')
+        data = {
+            'metadata': {'key': 'value'},
+            'apikey': self.api_key,
+            'job_type': 'upload',
+            'data': {
+                'url': 'http://0.0.0.0:50001/simple.csv',
+                'format': 'csv',
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': resource_id
+            }
+        }
 
-        assert 'job_id' in json.loads(rv.data)
+        ds.upload(None, data)
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
              headers={"content-type": "application/json"})
 
         result = json.loads(response.content)
+
+        assert not 'error' in result, result['error']
+
+        value = result['result']['records'][0][u'temperature']
+        assert int(value) == 1, value
+        assert result['result']['total'] == 6, (result['result']['total'], resource_id)
+        assert result['result']['fields'] == [{u'type': u'int4', u'id': u'_id'},
+                                              {u'type': u'timestamp', u'id': u'date'},
+                                              {u'type': u'numeric', u'id': u'temperature'},
+                                              {u'type': u'text', u'id': u'place'}], result['result']['fields']
+
+    def test_csv_file(self):
+
+        resource_id = self.make_resource_id()
+
+        data = {
+            'metadata': {'key': 'value'},
+            'apikey': self.api_key,
+            'job_type': 'upload',
+            'data': {
+                'url': 'http://0.0.0.0:50001/simple.csv',
+                'format': 'csv',
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': resource_id
+            }
+        }
+
+        # good job
+        rv = app.post('/job',
+                      data=json.dumps(data),
+                      content_type='application/json')
+
+        job_status_data = json.loads(rv.data)
+        assert 'job_id' in job_status_data, rv.data
+        assert not 'error' in job_status_data, rv.data
+
+        time.sleep(0.2)
+
+        response = requests.get(
+            'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
+             headers={"content-type": "application/json"})
+
+        result = json.loads(response.content)
+
+        assert not 'error' in result, result['error']
 
         value = result['result']['records'][0][u'temperature']
         assert int(value) == 1, value
