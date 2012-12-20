@@ -10,9 +10,9 @@ from messytables import (CSVTableSet, XLSTableSet, types_processor,
                          headers_guess, headers_processor, type_guess,
                          offset_processor)
 
-import ckanserviceprototype.web as web
-import ckanserviceprototype.job as job
-import ckanserviceprototype.util as util
+import ckanserviceprovider.web as web
+import ckanserviceprovider.job as job
+import ckanserviceprovider.util as util
 
 
 TYPE_MAPPING = {
