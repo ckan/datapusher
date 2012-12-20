@@ -1,6 +1,6 @@
-# ckan-datastorer-service
+# ckan-importer-service
 
-A service that migrates data to the ckan datastore
+A service that migrates data to the CKAN datastore.
 
 # Developer
 

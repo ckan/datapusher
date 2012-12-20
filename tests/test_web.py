@@ -10,7 +10,7 @@ from httpretty import httprettified
 
 import ckanserviceprototype.web as web
 
-import datastorerservice.datastorer as ds
+import importerservice.datastorer as ds
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'test.ini')
 
