@@ -5,13 +5,14 @@ import time
 import ConfigParser
 
 import requests
+from httpretty import HTTPretty
+from httpretty import httprettified
 
 import ckanserviceprototype.web as web
 
 import datastorerservice.datastorer as ds
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'test.ini')
-import file_server as file_server
 
 try:
     os.remove('/tmp/job_store.db')
@@ -19,6 +20,14 @@ except OSError:
     pass
 web.configure()
 app = web.app.test_client()
+
+
+def join_static_path(filename):
+    return os.path.join(os.path.dirname(__file__), 'static', filename)
+
+
+def get_static_file(filename):
+    return open(join_static_path(filename)).read()
 
 
 class TestWeb():
@@ -34,16 +43,12 @@ class TestWeb():
         cls.host = config.get('app:ckan', 'ckan_host')
         cls.api_key = config.get('app:ckan', 'user_api_key')
 
-        if not cls.serving:
-                file_server.serve()
-                cls.serving = True
-                # gets shutdown when nose finishes all tests,
-                # so don't restart ever
-
     def teardown(self):
         self.clean_up()
 
     def clean_up(self):
+        ''' Go through all created resources and delete them
+        '''
         while self.resource_ids:
             res_id = self.resource_ids.pop()
             request = {'resource_id': res_id}
@@ -56,6 +61,8 @@ class TestWeb():
                 raise Exception('Error deleting datastore for resource %s') % res_id
 
     def make_resource_id(self):
+        ''' Create a resource in ckan and get back the id
+        '''
         response = requests.post(
             'http://%s/api/action/package_create' % self.host,
             data=json.dumps(
@@ -76,7 +83,12 @@ class TestWeb():
                                            job_types=['upload'],
                                            name='datastorer'), rv.data
 
+    @httprettified
     def test_csv_directly(self):
+        url = 'http://www.ckan.org/static/simple.csv'
+        HTTPretty.register_uri(HTTPretty.GET, url,
+                           body=get_static_file('simple.csv'),
+                           content_type="application/csv")
         resource_id = self.make_resource_id()
 
         data = {
@@ -84,7 +96,7 @@ class TestWeb():
             'apikey': self.api_key,
             'job_type': 'upload',
             'data': {
-                'url': 'http://0.0.0.0:50001/simple.csv',
+                'url': url,
                 'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
                 'resource_id': resource_id
@@ -109,8 +121,12 @@ class TestWeb():
                                               {u'type': u'numeric', u'id': u'temperature'},
                                               {u'type': u'text', u'id': u'place'}], result['result']['fields']
 
+    @httprettified
     def test_csv_file(self):
-
+        url = 'http://www.ckan.org/static/simple.csv'
+        HTTPretty.register_uri(HTTPretty.GET, url,
+                           body=get_static_file('simple.csv'),
+                           content_type="application/csv")
         resource_id = self.make_resource_id()
 
         data = {
@@ -118,7 +134,7 @@ class TestWeb():
             'apikey': self.api_key,
             'job_type': 'upload',
             'data': {
-                'url': 'http://0.0.0.0:50001/simple.csv',
+                'url': url,
                 'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
                 'resource_id': resource_id
