@@ -22,7 +22,8 @@ setup(name='importer-service',
             messytables
             Requests'''
       ],
-      entry_points="""
-      # -*- Entry points: -*-
-      """,
+      entry_points={
+            'console_scripts':
+                  ['ckan-importer-service = importerservice.main:main'],
+            },
       )

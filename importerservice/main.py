@@ -20,7 +20,7 @@ def serve_test():
     return web.app.test_client()
 
 
-if __name__ == '__main__':
+def main():
     import argparse
 
     argparser = argparse.ArgumentParser(
@@ -34,3 +34,6 @@ if __name__ == '__main__':
 
     os.environ['JOB_CONFIG'] = args.config.name
     serve()
+
+if __name__ == '__main__':
+    main()
