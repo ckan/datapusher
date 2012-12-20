@@ -1,4 +1,3 @@
-import os
 import json
 import requests
 import datetime
@@ -10,7 +9,6 @@ from messytables import (CSVTableSet, XLSTableSet, types_processor,
                          headers_guess, headers_processor, type_guess,
                          offset_processor)
 
-import ckanserviceprovider.web as web
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 
@@ -74,7 +72,7 @@ def check_provided_data(data):
 
 
 @job.async
-def upload(task_id, input):
+def import_into_datastore(task_id, input):
     """
     Expected input dictionary with keys:
         'url'
@@ -185,20 +183,3 @@ def upload(task_id, input):
         if response.status_code not in (201, 200):
             raise util.JobError('Ckan bad response code (%s). Response was %s' %
                                  (response.status_code, response.content))
-
-
-if __name__ == '__main__':
-    import argparse
-
-    argparser = argparse.ArgumentParser(
-        description='Service that allows automatic migration of data to the CKAN DataStore',
-        epilog='"He reached out and pressed an invitingly large red button on a nearby panel. The panel lit up with the words Please do not press this button again."')
-
-    argparser.add_argument('config', metavar='CONFIG', type=file,
-                       help='configuration file')
-    args = argparser.parse_args()
-
-    os.environ['JOB_CONFIG'] = args.config.name
-
-    web.configure()
-    web.app.run()
