@@ -1,3 +1,4 @@
 HTTPretty
 nose==1.2.1
 ckan-service-provider
+data-converters
