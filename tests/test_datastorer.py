@@ -52,13 +52,13 @@ class TestDatastorer():
                          headers={'Content-Type': 'application/json',
                                   'Authorization': self.api_key},
                          )
-            if r.status_code != 200 and r.status_code != 404:
-                raise Exception('Error deleting datastore for resource %s') % res_id
+            if r.status_code not in [200, 404]:
+                raise Exception('Error deleting datastore for resource %s' % res_id)
 
     def make_resource_id(self):
         ''' Create a resource in ckan and get back the id
         '''
-        response = requests.post(
+        r = requests.post(
             'http://%s/api/action/package_create' % self.host,
             data=json.dumps(
                 {'name': str(uuid.uuid4()),
@@ -66,10 +66,11 @@ class TestDatastorer():
             ),
             headers={'Authorization': self.api_key, 'content-type': 'application/json'}
         )
-        res_id = json.loads(response.content)['result']['resources'][0]['id']
+        if r.status_code != 200:
+                raise Exception('Error creating datastore for resource. Check the CKAN output.')
 
+        res_id = json.loads(r.content)['result']['resources'][0]['id']
         self.resource_ids.append(res_id)
-
         return res_id
 
     @httprettified
