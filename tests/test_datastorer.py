@@ -9,13 +9,14 @@ from httpretty import HTTPretty
 from httpretty import httprettified
 
 import ckanserviceprototype.web as web
-
+import importerservice.main as main
 import importerservice.datastorer as ds
+
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'test.ini')
 
 web.configure()
-app = web.app.test_client()
+app = main.serve_test()
 
 
 def join_static_path(filename):

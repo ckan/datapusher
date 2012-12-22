@@ -5,7 +5,7 @@ import tempfile
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
-import dataconverters as dc
+import dataconverters.csv as csv
 
 
 TYPE_MAPPING = {
@@ -84,22 +84,16 @@ def import_into_datastore(task_id, input):
         f.seek(0)
 
         # TODO: refactor
-        t = ''
         if is_of_type(excel_types):
-            t = 'xls'
+            pass
         elif is_of_type(excel_xml_types):
-            t = 'xlsx'
+            pass
         elif is_of_type(csv_types):
-            t = 'csv'
+            result, metadata = csv.csv_parse(f, header_type=1)
         elif is_of_type(tsv_types):
-            t = 'tsv'
+            pass
 
-        # TODO: why do I need target?
-        data_for_conversion = dc.dataconverter(
-            f, {'type': t, 'target': 'json', 'header_type': '1'})
-        fields, result = data_for_conversion.convert()
-
-        headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in fields]
+        headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
         print 'headers', headers
         print 'result', result
 

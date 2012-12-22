@@ -2,10 +2,11 @@ import os
 import json
 import ConfigParser
 
+import importerservice.main as main
+
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'test.ini')
 
-import importerservice.main as main
 app = main.serve_test()
 
 
