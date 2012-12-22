@@ -93,14 +93,20 @@ def import_into_datastore(task_id, input):
         f.flush()
         f.seek(0)
 
+        parser = None
         if is_of_type(excel_types):
-            result, metadata = dc.xls.xls_parse(f, header_type=1)
+            parser = dc.xls
         elif is_of_type(excel_xml_types):
             pass
         elif is_of_type(csv_types):
-            result, metadata = dc.csv.csv_parse(f, header_type=1)
+            parser = dc.csv
         elif is_of_type(tsv_types):
             pass
+
+        if parser:
+            result, metadata = parser.parse(f, header_type=1)
+        else:
+            raise util.JobError('No parser for {} found.'.format(content_type))
 
         headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
         print 'headers', headers
@@ -111,7 +117,7 @@ def import_into_datastore(task_id, input):
                        'fields': headers,
                        'records': records}
             response = requests.post(datastore_create_request_url,
-                             data=json.dumps(request, cls = DatastoreEncoder),
+                             data=json.dumps(request, cls=DatastoreEncoder),
                              headers={'Content-Type': 'application/json',
                                       'Authorization': input['apikey']},
                              )
