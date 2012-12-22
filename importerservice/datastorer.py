@@ -90,7 +90,7 @@ def import_into_datastore(task_id, input):
         return content_type in types or data['format'] in types
 
     with tempfile.NamedTemporaryFile() as f:
-        f.write(requested_resource.text)
+        f.write(requested_resource.text.encode('utf-8'))
         f.flush()
         f.seek(0)
 
@@ -105,7 +105,7 @@ def import_into_datastore(task_id, input):
             pass
 
         if parser:
-            result, metadata = parser.parse(f, header_type=1)
+            result, metadata = parser.parse(f)
         else:
             raise util.JobError('No parser for {} found.'.format(content_type))
 
