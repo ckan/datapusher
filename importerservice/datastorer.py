@@ -6,7 +6,8 @@ import datetime
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
-import dataconverters as dc
+import dataconverters.csv
+import dataconverters.xls
 
 
 TYPE_MAPPING = {
@@ -95,11 +96,11 @@ def import_into_datastore(task_id, input):
 
         parser = None
         if is_of_type(excel_types):
-            parser = dc.xls
+            parser = dataconverters.xls
         elif is_of_type(excel_xml_types):
             pass
         elif is_of_type(csv_types):
-            parser = dc.csv
+            parser = dataconverters.csv
         elif is_of_type(tsv_types):
             pass
 
