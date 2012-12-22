@@ -2,10 +2,11 @@ import json
 import requests
 import itertools
 import tempfile
+import datetime
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
-import dataconverters.csv as csv
+import dataconverters as dc
 
 
 TYPE_MAPPING = {
@@ -46,6 +47,15 @@ def chunky(iterable, n):
         yield chunk
 
 
+class DatastoreEncoder(json.JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+
+        return json.JSONEncoder.default(self, obj)
+
+
 def check_provided_data(data):
     if not 'url' in data:
         raise util.JobError("Did not provide URL to resource.")
@@ -83,13 +93,12 @@ def import_into_datastore(task_id, input):
         f.flush()
         f.seek(0)
 
-        # TODO: refactor
         if is_of_type(excel_types):
-            pass
+            result, metadata = dc.xls.xls_parse(f, header_type=1)
         elif is_of_type(excel_xml_types):
             pass
         elif is_of_type(csv_types):
-            result, metadata = csv.csv_parse(f, header_type=1)
+            result, metadata = dc.csv.csv_parse(f, header_type=1)
         elif is_of_type(tsv_types):
             pass
 
@@ -102,7 +111,7 @@ def import_into_datastore(task_id, input):
                        'fields': headers,
                        'records': records}
             response = requests.post(datastore_create_request_url,
-                             data=json.dumps(request),
+                             data=json.dumps(request, cls = DatastoreEncoder),
                              headers={'Content-Type': 'application/json',
                                       'Authorization': input['apikey']},
                              )
