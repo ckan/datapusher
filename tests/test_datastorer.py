@@ -227,7 +227,7 @@ class TestDatastorer():
         assert 'job_id' in job_status_data, rv.data
         assert not 'error' in job_status_data, rv.data
 
-        time.sleep(0.2)
+        time.sleep(1.0)
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
