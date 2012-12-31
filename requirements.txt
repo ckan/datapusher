@@ -1,4 +1,4 @@
 HTTPretty
 nose==1.2.1
-ckan-service-provider
+-e git://github.com/okfn/ckan-service-provider.git#egg=ckan-service-provider
 data-converters
