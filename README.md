@@ -2,7 +2,9 @@
 
 __WORK IN PROGRESS__ - Expect release in early 2013.
 
-A service that migrates data to the CKAN datastore.
+A service that migrates data to the CKAN datastore. 
+
+There will be two endpoints. An asynchronous one that imports data into the datastore and a synchronous one that parses files and returns JSON (this will eventually replace dataproxy).
 
 ## Developer
 
