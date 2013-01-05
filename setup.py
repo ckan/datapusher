@@ -3,7 +3,7 @@ import sys, os
 
 version = '0.1'
 
-setup(name='importer-service',
+setup(name='ckan-importer-service',
       version=version,
       description="Service that allows automatic migration of data to the CKAN DataStore.",
       long_description="""\
