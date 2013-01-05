@@ -1,4 +1,5 @@
 import json
+import urllib2
 import requests
 import itertools
 import tempfile
@@ -81,56 +82,50 @@ def import_into_datastore(task_id, input):
     tsv_types = ['tsv', 'text/tsv', 'text/tab-separated-values']
     csv_types = ['csv', 'text/csv', 'text/comma-separated-values']
 
-    requested_resource = requests.get(data['url'])
+    response = urllib2.urlopen(data['url'])
 
-    content_type = requested_resource.headers['content-type']\
-                                    .split(';', 1)[0]  # remove parameters
+    content_type = response.info().getheader('content-type').split(';', 1)[0]  # remove parameters
 
     def is_of_type(types):
         return content_type in types or data['format'] in types
 
-    with tempfile.NamedTemporaryFile() as f:
-        f.write(requested_resource.text.encode('utf-8'))
-        f.flush()
-        f.seek(0)
+    parser = None
+    if is_of_type(excel_types):
+        parser = dataconverters.xls
+    elif is_of_type(excel_xml_types):
+        pass
+    elif is_of_type(csv_types):
+        parser = dataconverters.csv
+    elif is_of_type(tsv_types):
+        pass
 
-        parser = None
-        if is_of_type(excel_types):
-            parser = dataconverters.xls
-        elif is_of_type(excel_xml_types):
-            pass
-        elif is_of_type(csv_types):
-            parser = dataconverters.csv
-        elif is_of_type(tsv_types):
-            pass
+    if parser:
+        result, metadata = parser.parse(response)
+    else:
+        raise util.JobError('No parser for {} found.'.format(content_type))
 
-        if parser:
-            result, metadata = parser.parse(f)
-        else:
-            raise util.JobError('No parser for {} found.'.format(content_type))
+    headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
+    print 'headers', headers
+    print 'result', result
 
-        headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
-        print 'headers', headers
-        print 'result', result
+    def send_request(records):
+        request = {'resource_id': data['resource_id'],
+                   'fields': headers,
+                   'records': records}
+        r = requests.post(datastore_create_request_url,
+                         data=json.dumps(request, cls=DatastoreEncoder),
+                         headers={'Content-Type': 'application/json',
+                                  'Authorization': input['apikey']},
+                         )
+        check_response(r, datastore_create_request_url)
 
-        def send_request(records):
-            request = {'resource_id': data['resource_id'],
-                       'fields': headers,
-                       'records': records}
-            response = requests.post(datastore_create_request_url,
-                             data=json.dumps(request, cls=DatastoreEncoder),
-                             headers={'Content-Type': 'application/json',
-                                      'Authorization': input['apikey']},
-                             )
-            check_response(response, datastore_create_request_url)
+    #logger.info('Creating: {0}.'.format(resource['id']))
 
-        #logger.info('Creating: {0}.'.format(resource['id']))
+    count = 0
+    for records in chunky(result, 100):
+        count += len(records)
+        send_request(records)
 
-        count = 0
-        for records in chunky(result, 100):
-            count += len(records)
-            send_request(records)
+    #from nose.tools import set_trace; set_trace()
 
-        #from nose.tools import set_trace; set_trace()
-
-        #logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource['id']))
+    #logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource['id']))
