@@ -2,7 +2,6 @@ import json
 import urllib2
 import requests
 import itertools
-import tempfile
 import datetime
 
 import ckanserviceprovider.job as job

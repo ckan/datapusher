@@ -2,14 +2,13 @@ import os
 import json
 import uuid
 import time
-import ConfigParser
 
 from nose.tools import assert_equal
 import requests
 from httpretty import HTTPretty
 from httpretty import httprettified
 
-import ckanserviceprototype.web as web
+import ckanserviceprovider.web as web
 import importerservice.main as main
 import importerservice.datastorer as ds
 
