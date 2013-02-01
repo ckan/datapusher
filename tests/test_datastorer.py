@@ -13,8 +13,10 @@ import ckanserviceprototype.web as web
 import importerservice.main as main
 import importerservice.datastorer as ds
 
+import settings_test as config
+
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
-                                        'test.ini')
+                                        'settings_test.py')
 
 web.configure()
 app = main.serve_test()
@@ -33,12 +35,8 @@ class TestDatastorer():
 
     @classmethod
     def setup_class(cls):
-        config = ConfigParser.ConfigParser()
-        config_file = os.environ.get('JOB_CONFIG')
-        config.read(config_file)
-
-        cls.host = config.get('app:ckan', 'ckan_host')
-        cls.api_key = config.get('app:ckan', 'user_api_key')
+        cls.host = config.CKAN_HOST
+        cls.api_key = config.USER_API_KEY
 
     def teardown(self):
         self.clean_up()
