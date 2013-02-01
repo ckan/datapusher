@@ -3,11 +3,9 @@ import os
 import ckanserviceprovider.web as web
 
 import datastorer
-import dataproxy
 
 # check whether jobs have been imported properly
 assert(datastorer.import_into_datastore)
-assert(dataproxy.convert_resource)
 
 
 def serve():
