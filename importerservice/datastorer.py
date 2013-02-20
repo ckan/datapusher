@@ -6,7 +6,7 @@ import datetime
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
-import dataconverters.csv
+import dataconverters.commas
 import dataconverters.xls
 
 
@@ -94,9 +94,9 @@ def import_into_datastore(task_id, input):
     elif is_of_type(excel_xml_types):
         pass
     elif is_of_type(csv_types):
-        parser = dataconverters.csv
+        parser = dataconverters.commas
     elif is_of_type(tsv_types):
-        pass
+        parser = dataconverters.commas
 
     if parser:
         result, metadata = parser.parse(response)
