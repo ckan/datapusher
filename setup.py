@@ -19,7 +19,7 @@ setup(name='ckan-importer-service',
       zip_safe=False,
       install_requires=['''
             ckan-service-provider
-            messytables
+            dataconverters
             Requests'''
       ],
       entry_points={
