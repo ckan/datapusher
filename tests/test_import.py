@@ -61,14 +61,14 @@ class TestImport():
             if r.status_code not in [200, 404]:
                 raise Exception('Error deleting datastore for resource %s' % res_id)
 
-    def make_resource_id(self):
+    def make_resource_id(self, url):
         ''' Create a resource in ckan and get back the id
         '''
         r = requests.post(
             'http://%s/api/action/package_create' % self.host,
             data=json.dumps(
                 {'name': str(uuid.uuid4()),
-                 'resources': [{u'url': u'test'}]}
+                 'resources': [{'url': url, 'format': 'csv'}]}
             ),
             headers={'Authorization': self.api_key, 'content-type': 'application/json'}
         )
@@ -85,16 +85,7 @@ class TestImport():
         HTTPretty.register_uri(HTTPretty.GET, url,
                                body=get_static_file('simple.csv'),
                                content_type="application/csv")
-        resource_id = self.make_resource_id()
-
-        res_url = 'http://%s/api/action/resource_show' % self.host
-        HTTPretty.register_uri(HTTPretty.POST, res_url,
-                               body=json.dumps({
-                               'url': url,
-                                   'format': 'csv'
-                               }),
-                               content_type="application/json",
-                               status=200)
+        resource_id = self.make_resource_id(url)
 
         data = {
             'apikey': self.api_key,

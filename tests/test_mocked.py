@@ -36,22 +36,28 @@ class TestImport(unittest.TestCase):
         source_url = 'http://www.source.org/static/simple.csv'
         HTTPretty.register_uri(HTTPretty.GET, source_url,
                                body=get_static_file('simple.csv'),
-                               content_type="application/csv",
-                               status=200)
+                               content_type="application/csv")
 
         res_url = 'http://www.ckan.org/api/action/resource_show'
         HTTPretty.register_uri(HTTPretty.POST, res_url,
                                body=json.dumps({
-                               'url': source_url,
-                                   'format': 'csv'
+                                   'success': True,
+                                   'result': {
+                                       'url': source_url,
+                                       'format': 'CSV'
+                                   }
                                }),
+                               content_type="application/json")
+
+        resource_update_url = 'http://www.ckan.org/api/action/resource_update'
+        HTTPretty.register_uri(HTTPretty.POST, resource_update_url,
+                               body=json.dumps({'success': True}),
                                content_type="application/json")
 
         datastore_del_url = 'http://www.ckan.org/api/action/datastore_delete'
         HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
                                body=json.dumps({'success': True}),
-                               content_type="application/json",
-                               status=200)
+                               content_type="application/json")
 
         def create_handler(method, uri, headers):
             return json.dumps({'success': True})
@@ -59,8 +65,7 @@ class TestImport(unittest.TestCase):
         datastore_url = 'http://www.ckan.org/api/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
                                body=create_handler,
-                               content_type="application/json",
-                               status=200)
+                               content_type="application/json")
 
     @httprettified
     def test_simple_csv_basic(self):
