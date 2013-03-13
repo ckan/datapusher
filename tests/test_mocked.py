@@ -6,8 +6,8 @@ from httpretty import HTTPretty
 from httpretty import httprettified
 
 import ckanserviceprovider.web as web
-import systematicsquirrel.main as main
-import systematicsquirrel.jobs as jobs
+import datapusher.main as main
+import datapusher.jobs as jobs
 import ckanserviceprovider.util as util
 
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),

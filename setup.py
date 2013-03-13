@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 version = '0.1'
 
-setup(name='systematicsquirrel',
+setup(name='datapusher',
       version=version,
       description="Service that allows automatic import of data to the CKAN DataStore.",
       long_description="""\
@@ -22,7 +22,7 @@ setup(name='systematicsquirrel',
             Requests'''],
       entry_points={
             'console_scripts': [
-                  'systematicsquirrel = systematicsquirrel.main:main'
+                  'datapusher = datapusher.main:main'
             ],
       },
 )

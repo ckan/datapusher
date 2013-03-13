@@ -2,7 +2,7 @@ import os
 import json
 from nose.tools import assert_equal
 
-import systematicsquirrel.main as main
+import datapusher.main as main
 
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'settings_test.py')

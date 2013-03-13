@@ -1,6 +1,6 @@
-# Systematic Squirrel
+# Data Pusher
 
-[![Build Status](https://travis-ci.org/okfn/systematic-squirrel.png)](https://travis-ci.org/okfn/systematic-squirrel)
+[![Build Status](https://travis-ci.org/okfn/datapusher.png)](https://travis-ci.org/okfn/datapusher)
 
 __WORK IN PROGRESS__ - Expect release in mid 2013.
 
