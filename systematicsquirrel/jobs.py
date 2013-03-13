@@ -27,13 +27,16 @@ def check_response(response, datastore_create_request_url):
 
     if response.status_code not in (201, 200):
         try:
-            response.content = json.loads(response.content)
-            raise util.JobError('Datastorer bad response code (%s) on %s. Response was %s' %
-                (response.status_code, datastore_create_request_url, response.content))
+            content = response.json()
+            raise util.JobError('Datastorer bad response. Status code: %s, At: %s, Response: %s' %
+                (response.status_code, datastore_create_request_url, content))
         except:
-            raise util.JobError('Datastorer bad response code (%s) on %s.' %
+            raise util.JobError('Datastorer bad response. Status code: %s, At: %s.' %
                 (response.status_code, datastore_create_request_url))
 
+    if not response.json()['success']:
+        raise util.JobError('Datastorer bad response. Status code: %s, At: %s, Response: %s' %
+                (response.status_code, datastore_create_request_url, response.json()))
 
 # generates chunks of data that can be loaded into ckan
 # n is the maximum size of a chunk
@@ -57,7 +60,7 @@ class DatastoreEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def check_provided_data(data):
+def validate_data(data):
     if not 'url' in data:
         raise util.JobError("Did not provide URL to resource.")
 
@@ -70,7 +73,7 @@ def import_into_datastore(task_id, input):
     """
 
     data = input['data']
-    check_provided_data(data)
+    validate_data(data)
 
     ckan_url = data['ckan_url'].rstrip('/')
     datastore_create_request_url = '%s/api/action/datastore_create' % (ckan_url)
@@ -108,14 +111,15 @@ def import_into_datastore(task_id, input):
     print 'result', result
 
     def send_request(records):
+        print 'send request to', datastore_create_request_url
         request = {'resource_id': data['resource_id'],
                    'fields': headers,
                    'records': records}
         r = requests.post(datastore_create_request_url,
-                         data=json.dumps(request, cls=DatastoreEncoder),
-                         headers={'Content-Type': 'application/json',
-                                  'Authorization': input['apikey']},
-                         )
+                          data=json.dumps(request, cls=DatastoreEncoder),
+                          headers={'Content-Type': 'application/json',
+                                   'Authorization': input['apikey']},
+                          )
         check_response(r, datastore_create_request_url)
 
     #logger.info('Creating: {0}.'.format(resource['id']))
