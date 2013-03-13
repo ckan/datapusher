@@ -43,6 +43,7 @@ def check_response(response, datastore_create_request_url):
         raise util.JobError('Datastorer bad response. Status code: %s, At: %s, Response: %s' %
                 (response.status_code, datastore_create_request_url, response.json()))
 
+
 # generates chunks of data that can be loaded into ckan
 # n is the maximum size of a chunk
 def chunky(iterable, n):
@@ -66,8 +67,17 @@ class DatastoreEncoder(json.JSONEncoder):
 
 
 def validate_input(input):
-    if not 'url' in input['metadata']:
-        raise util.JobError("Did not provide URL to resource.")
+    TYPES = ['resource']
+    data = input['metadata']
+
+    if not 'id' in data:
+        raise util.JobError("No url provided.")
+    if not 'type' in data:
+        raise util.JobError("No type provided.")
+    if not data['type'] in TYPES:
+        raise util.JobError("Provide on of these types {types}".format(TYPES))
+    if not 'ckan_url' in data:
+        raise util.JobError("No ckan_url provided.")
 
 
 @job.async
@@ -79,58 +89,68 @@ def import_into_datastore(task_id, input):
 
     ckan_url = data['ckan_url'].rstrip('/')
     datastore_create_request_url = '%s/api/action/datastore_create' % (ckan_url)
+    resource_show_url = '%s/api/action/resource_show' % (ckan_url)
 
-    excel_types = ['xls', 'application/ms-excel', 'application/xls',
-                   'application/vnd.ms-excel']
-    excel_xml_types = ['xlsx']
-    tsv_types = ['tsv', 'text/tsv', 'text/tab-separated-values']
-    csv_types = ['csv', 'text/csv', 'text/comma-separated-values']
+    # list of all resources that shuould be imported
+    resources = []
 
-    response = urllib2.urlopen(data['url'])
+    if data['type'] == 'resource':
+        r = requests.post(resource_show_url, data={'id': data['id']})
+        resource = r.json()
+        resource['id'] = data['id']
+        resources.append(resource)
+        print resources
 
-    content_type = response.info().getheader('content-type').split(';', 1)[0]  # remove parameters
+    for resource in resources:
+        excel_types = ['xls', 'application/ms-excel', 'application/xls',
+                       'application/vnd.ms-excel']
+        excel_xml_types = ['xlsx']
+        tsv_types = ['tsv', 'text/tsv', 'text/tab-separated-values']
+        csv_types = ['csv', 'text/csv', 'text/comma-separated-values']
 
-    def is_of_type(types):
-        return content_type in types or data['format'] in types
+        response = urllib2.urlopen(resource['url'])
 
-    parser = None
-    if is_of_type(excel_types):
-        parser = dataconverters.xls
-    elif is_of_type(excel_xml_types):
-        pass
-    elif is_of_type(csv_types):
-        parser = dataconverters.commas
-    elif is_of_type(tsv_types):
-        parser = dataconverters.commas
+        content_type = response.info().getheader('content-type').split(';', 1)[0]  # remove parameters
 
-    if parser:
-        result, metadata = parser.parse(response)
-    else:
-        raise util.JobError('No parser for {} found.'.format(content_type))
+        def is_of_type(types):
+            return content_type in types or resource['format'] in types
 
-    headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
-    print 'headers', headers
-    print 'result', result
+        parser = None
+        if is_of_type(excel_types):
+            parser = dataconverters.xls
+        elif is_of_type(excel_xml_types):
+            pass
+        elif is_of_type(csv_types):
+            parser = dataconverters.commas
+        elif is_of_type(tsv_types):
+            parser = dataconverters.commas
 
-    def send_request(records):
-        print 'send request to', datastore_create_request_url
-        request = {'resource_id': data['resource_id'],
-                   'fields': headers,
-                   'records': records}
-        r = requests.post(datastore_create_request_url,
-                          data=json.dumps(request, cls=DatastoreEncoder),
-                          headers={'Content-Type': 'application/json',
-                                   'Authorization': input['apikey']},
-                          )
-        check_response(r, datastore_create_request_url)
+        if parser:
+            result, metadata = parser.parse(response)
+        else:
+            raise util.JobError('No parser for {} found.'.format(content_type))
 
-    #logger.info('Creating: {0}.'.format(resource['id']))
+        headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
+        print 'headers', headers
+        print 'result', result
 
-    count = 0
-    for records in chunky(result, 100):
-        count += len(records)
-        send_request(records)
+        def send_request(records):
+            print 'send request to', datastore_create_request_url
+            request = {'resource_id': resource['id'],
+                       'fields': headers,
+                       'records': records}
+            r = requests.post(datastore_create_request_url,
+                              data=json.dumps(request, cls=DatastoreEncoder),
+                              headers={'Content-Type': 'application/json',
+                                       'Authorization': input['apikey']},
+                              )
+            check_response(r, datastore_create_request_url)
 
-    #from nose.tools import set_trace; set_trace()
+        #logger.info('Creating: {0}.'.format(resource['id']))
 
-    #logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource['id']))
+        count = 0
+        for records in chunky(result, 100):
+            count += len(records)
+            send_request(records)
+
+        #logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource['id']))

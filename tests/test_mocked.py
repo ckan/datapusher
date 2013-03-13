@@ -40,6 +40,15 @@ class TestImport(unittest.TestCase):
                                content_type="application/csv",
                                status=200)
 
+        res_url = 'http://www.ckan.org/api/action/resource_show'
+        HTTPretty.register_uri(HTTPretty.POST, res_url,
+                               body=json.dumps({
+                                'url': source_url,
+                                'format': 'csv'
+                                }),
+                               content_type="application/csv",
+                               status=200)
+
         def create_handler(method, uri, headers):
             return json.dumps({'success': True})
 
@@ -53,22 +62,13 @@ class TestImport(unittest.TestCase):
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
             'metadata': {
-                'url': source_url,
-                'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
-                'resource_id': self.resource_id
+                'type': 'resource',
+                'id': self.resource_id
             }
         }
 
         jobs.import_into_datastore(None, data)
-
-    @httprettified
-    def test_wrong_api_key(self):
-        source_url = 'http://www.source.org/static/simple.csv'
-        HTTPretty.register_uri(HTTPretty.GET, source_url,
-                               body=get_static_file('simple.csv'),
-                               content_type="application/csv",
-                               status=200)
 
         datastore_url = 'http://www.ckan.org/api/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
@@ -80,10 +80,9 @@ class TestImport(unittest.TestCase):
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
             'metadata': {
-                'url': source_url,
-                'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
-                'resource_id': self.resource_id
+                'type': 'resource',
+                'id': self.resource_id
             }
         }
 
