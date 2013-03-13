@@ -43,11 +43,10 @@ class TestImport(unittest.TestCase):
         res_url = 'http://www.ckan.org/api/action/resource_show'
         HTTPretty.register_uri(HTTPretty.POST, res_url,
                                body=json.dumps({
-                                'url': source_url,
-                                'format': 'csv'
-                                }),
-                               content_type="application/csv",
-                               status=200)
+                               'url': source_url,
+                                   'format': 'csv'
+                               }),
+                               content_type="application/json")
 
         def create_handler(method, uri, headers):
             return json.dumps({'success': True})

@@ -54,10 +54,10 @@ class TestImport():
             res_id = self.resource_ids.pop()
             request = {'resource_id': res_id}
             r = requests.post('http://%s/api/action/datastore_delete' % self.host,
-                        data=json.dumps(request),
-                        headers={'Content-Type': 'application/json',
-                                  'Authorization': self.api_key},
-                        )
+                              data=json.dumps(request),
+                              headers={'Content-Type': 'application/json',
+                                       'Authorization': self.api_key}
+                              )
             if r.status_code not in [200, 404]:
                 raise Exception('Error deleting datastore for resource %s' % res_id)
 
@@ -83,16 +83,23 @@ class TestImport():
     def test_simple_csv_directly(self):
         url = 'http://www.ckan.org/static/simple.csv'
         HTTPretty.register_uri(HTTPretty.GET, url,
-                           body=get_static_file('simple.csv'),
-                           content_type="application/csv")
+                               body=get_static_file('simple.csv'),
+                               content_type="application/csv")
         resource_id = self.make_resource_id()
+
+        res_url = 'http://%s/api/action/resource_show' % self.host
+        HTTPretty.register_uri(HTTPretty.POST, res_url,
+                               body=json.dumps({
+                               'url': url,
+                                   'format': 'csv'
+                               }),
+                               content_type="application/json",
+                               status=200)
 
         data = {
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
             'metadata': {
-                'url': url,
-                'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
                 'resource_id': resource_id
             }
@@ -102,7 +109,7 @@ class TestImport():
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
-             headers={"content-type": "application/json"})
+            headers={"content-type": "application/json"})
 
         result = json.loads(response.content)
 
@@ -111,136 +118,8 @@ class TestImport():
         value = result['result']['records'][0][u'temperature']
         assert_equal(int(value), 1)
         assert_equal(result['result']['total'], 6)
-        assert_equal(result['result']['fields'], [{u'type': u'int4', u'id': u'_id'},
-                                              {u'type': u'timestamp', u'id': u'date'},
-                                              {u'type': u'numeric', u'id': u'temperature'},
-                                              {u'type': u'text', u'id': u'place'}])
-
-    @httprettified
-    def test_simple_tsv_directly(self):
-        url = 'http://www.ckan.org/static/simple.tsv'
-        HTTPretty.register_uri(HTTPretty.GET, url,
-                           body=get_static_file('simple.tsv'),
-                           content_type="application/tsv")
-        resource_id = self.make_resource_id()
-
-        data = {
-            'apikey': self.api_key,
-            'job_type': 'import_into_datastore',
-            'metadata': {
-                'url': url,
-                'format': 'tsv',
-                'ckan_url': 'http://%s/' % self.host,
-                'resource_id': resource_id
-            }
-        }
-
-        jobs.import_into_datastore(None, data)
-
-        response = requests.get(
-            'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
-             headers={"content-type": "application/json"})
-
-        result = json.loads(response.content)
-
-        assert not 'error' in result, result['error']
-
-        value = result['result']['records'][0][u'temperature']
-        assert_equal(int(value), 1)
-        assert_equal(result['result']['total'], 6)
-        assert_equal(result['result']['fields'], [{u'type': u'int4', u'id': u'_id'},
-                                              {u'type': u'timestamp', u'id': u'date'},
-                                              {u'type': u'numeric', u'id': u'temperature'},
-                                              {u'type': u'text', u'id': u'place'}])
-
-    @httprettified
-    def test_october_2011_directly(self):
-        url = 'http://www.ckan.org/static/october_2011.csv'
-        HTTPretty.register_uri(HTTPretty.GET, url,
-                           body=get_static_file('october_2011.csv'),
-                           content_type="application/csv")
-        resource_id = self.make_resource_id()
-
-        data = {
-            'apikey': self.api_key,
-            'job_type': 'import_into_datastore',
-            'metadata': {
-                'url': url,
-                'format': 'csv',
-                'ckan_url': 'http://%s/' % self.host,
-                'resource_id': resource_id
-            }
-        }
-
-        jobs.import_into_datastore(None, data)
-
-        response = requests.get(
-            'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
-             headers={"content-type": "application/json"})
-
-        result = json.loads(response.content)
-
-        assert not 'error' in result, result['error']
-
-        value = result['result']['records'][0][u'Supplier Name']
-        assert_equal(value, 'ALBANY OFFICE FURNITURE SOLUTIONS')
-        assert_equal(result['result']['total'], 230)
-        assert_equal(len(result['result']['records']), 100)
-
-        assert_equal(result['result']['fields'], [{u'type': u'int4', u'id': u'_id'},
-                                              {u'type': u'text', u'id': u'Directorate'},
-                                              {u'type': u'text', u'id': u'Service Area'},
-                                              {u'type': u'text', u'id': u'Expenditure Category'},
-                                              {u'type': u'timestamp', u'id': u'Payment Date'},
-                                              {u'type': u'text', u'id': u'Supplier Name'},
-                                              {u'type': u'numeric', u'id': u'Internal Ref'},
-                                              {u'type': u'text', u'id': u'Capital/ Revenue'},
-                                              {u'type': u'text', u'id': u'Cost Centre'},
-                                              {u'type': u'text', u'id': u'Cost Centre Description'},
-                                              {u'type': u'float8', u'id': u'Grand Total'}])
-
-    @httprettified
-    def test_csv_file(self):
-        url = 'http://www.ckan.org/static/simple.csv'
-        HTTPretty.register_uri(HTTPretty.GET, url,
-                           body=get_static_file('simple.csv'),
-                           content_type="application/csv")
-        resource_id = self.make_resource_id()
-
-        data = {
-            'apikey': self.api_key,
-            'job_type': 'import_into_datastore',
-            'metadata': {
-                'url': url,
-                'format': 'csv',
-                'ckan_url': 'http://%s/' % self.host,
-                'resource_id': resource_id
-            }
-        }
-
-        # good job
-        rv = app.post('/job',
-                      data=json.dumps(data),
-                      content_type='application/json')
-
-        job_status_data = json.loads(rv.data)
-        assert 'job_id' in job_status_data, rv.data
-        assert not 'error' in job_status_data, rv.data
-
-        time.sleep(1.0)
-
-        response = requests.get(
-            'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
-             headers={"content-type": "application/json"})
-
-        result = json.loads(response.content)
-
-        assert not 'error' in result, result['error']
-
-        value = result['result']['records'][0][u'temperature']
-        assert_equal(int(value), 1)
-        assert_equal(result['result']['total'], 6)
-        assert_equal(result['result']['fields'], [{u'type': u'int4', u'id': u'_id'},
-                                              {u'type': u'timestamp', u'id': u'date'},
-                                              {u'type': u'numeric', u'id': u'temperature'},
-                                              {u'type': u'text', u'id': u'place'}])
+        assert_equal(result['result']['fields'],
+                     [{u'type': u'int4', u'id': u'_id'},
+                      {u'type': u'timestamp', u'id': u'date'},
+                      {u'type': u'numeric', u'id': u'temperature'},
+                      {u'type': u'text', u'id': u'place'}])
