@@ -32,8 +32,7 @@ class TestImport(unittest.TestCase):
         cls.api_key = 'my-key'
         cls.resource_id = 'foo-bar-42'
 
-    @httprettified
-    def test_simple_csv_basic(self):
+    def register_urls(self):
         source_url = 'http://www.source.org/static/simple.csv'
         HTTPretty.register_uri(HTTPretty.GET, source_url,
                                body=get_static_file('simple.csv'),
@@ -48,6 +47,12 @@ class TestImport(unittest.TestCase):
                                }),
                                content_type="application/json")
 
+        datastore_del_url = 'http://www.ckan.org/api/action/datastore_delete'
+        HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
+                               body=json.dumps({'success': True}),
+                               content_type="application/json",
+                               status=200)
+
         def create_handler(method, uri, headers):
             return json.dumps({'success': True})
 
@@ -57,6 +62,9 @@ class TestImport(unittest.TestCase):
                                content_type="application/json",
                                status=200)
 
+    @httprettified
+    def test_simple_csv_basic(self):
+        self.register_urls()
         data = {
             'apikey': self.api_key,
             'job_type': 'push_to_datastore',
@@ -67,6 +75,10 @@ class TestImport(unittest.TestCase):
         }
 
         jobs.push_to_datastore(None, data)
+
+    @httprettified
+    def test_wrong_api_key(self):
+        self.register_urls()
 
         def create_handler_error(method, uri, headers):
             return json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}})
