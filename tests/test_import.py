@@ -29,7 +29,7 @@ def get_static_file(filename):
     return open(join_static_path(filename)).read()
 
 
-class TestDatastorer():
+class TestImport():
     resource_ids = []
 
     @classmethod
@@ -47,10 +47,10 @@ class TestDatastorer():
             res_id = self.resource_ids.pop()
             request = {'resource_id': res_id}
             r = requests.post('http://%s/api/action/datastore_delete' % self.host,
-                         data=json.dumps(request),
-                         headers={'Content-Type': 'application/json',
+                        data=json.dumps(request),
+                        headers={'Content-Type': 'application/json',
                                   'Authorization': self.api_key},
-                         )
+                        )
             if r.status_code not in [200, 404]:
                 raise Exception('Error deleting datastore for resource %s' % res_id)
 

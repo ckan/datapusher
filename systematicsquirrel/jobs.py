@@ -13,7 +13,7 @@ import dataconverters.xls
 TYPE_MAPPING = {
     'String': 'text',
     'Integer': 'numeric',  # 'int' may not be big enough,
-                    # and type detection may not realize it needs to be big
+            # and type detection may not realize it needs to be big
     'Float': 'float',
     'Decimal': 'numeric',
     'DateTime': 'timestamp'

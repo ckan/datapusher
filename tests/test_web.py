@@ -16,4 +16,4 @@ class TestWeb():
         rv = app.get('/status')
         assert_equal(json.loads(rv.data), dict(version=0.1,
                      job_types=['import_into_datastore'],
-                     name='ckan_importer'))
+                     name='systematic_squirrel'))
