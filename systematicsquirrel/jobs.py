@@ -77,7 +77,7 @@ def validate_input(input):
 
 @job.async
 def import_into_datastore(task_id, input):
-    print "Input", input
+    print "Input:", input
 
     data = input['metadata']
     validate_input(input)
@@ -124,11 +124,10 @@ def import_into_datastore(task_id, input):
             raise util.JobError('No parser for {} found.'.format(content_type))
 
         headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in metadata['fields']]
-        print 'headers', headers
-        print 'result', result
+        print 'Headers:', headers
+        print 'Result:', result
 
         def send_request(records):
-            print 'send request to', datastore_create_request_url
             request = {'resource_id': data['resource_id'],
                        'fields': headers,
                        'records': records}
@@ -138,8 +137,6 @@ def import_into_datastore(task_id, input):
                                        'Authorization': input['apikey']},
                               )
             check_response(r, datastore_create_request_url)
-
-        #logger.info('Creating: {0}.'.format(resource['id']))
 
         count = 0
         for records in chunky(result, 100):
