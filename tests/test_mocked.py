@@ -59,14 +59,14 @@ class TestImport(unittest.TestCase):
 
         data = {
             'apikey': self.api_key,
-            'job_type': 'import_into_datastore',
+            'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
                 'resource_id': self.resource_id
             }
         }
 
-        jobs.import_into_datastore(None, data)
+        jobs.push_to_datastore(None, data)
 
         def create_handler_error(method, uri, headers):
             return json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}})
@@ -79,11 +79,11 @@ class TestImport(unittest.TestCase):
 
         data = {
             'apikey': self.api_key,
-            'job_type': 'import_into_datastore',
+            'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
                 'resource_id': self.resource_id
             }
         }
 
-        self.assertRaises(util.JobError, jobs.import_into_datastore, None, data)
+        self.assertRaises(util.JobError, jobs.push_to_datastore, None, data)

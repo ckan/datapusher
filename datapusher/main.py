@@ -2,10 +2,10 @@ import os
 
 import ckanserviceprovider.web as web
 
-import datastorer
+import jobs
 
 # check whether jobs have been imported properly
-assert(datastorer.import_into_datastore)
+assert(jobs.push_to_datastore)
 
 
 def serve():

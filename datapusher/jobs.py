@@ -76,7 +76,7 @@ def validate_input(input):
 
 
 @job.async
-def import_into_datastore(task_id, input):
+def push_to_datastore(task_id, input):
     print "Input:", input
 
     data = input['metadata']
