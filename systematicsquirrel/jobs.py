@@ -67,15 +67,10 @@ class DatastoreEncoder(json.JSONEncoder):
 
 
 def validate_input(input):
-    TYPES = ['resource']
     data = input['metadata']
 
-    if not 'id' in data:
-        raise util.JobError("No url provided.")
-    if not 'type' in data:
-        raise util.JobError("No type provided.")
-    if not data['type'] in TYPES:
-        raise util.JobError("Provide on of these types {types}".format(TYPES))
+    if not 'resource_id' in data:
+        raise util.JobError("No id provided.")
     if not 'ckan_url' in data:
         raise util.JobError("No ckan_url provided.")
 
@@ -94,12 +89,10 @@ def import_into_datastore(task_id, input):
     # list of all resources that shuould be imported
     resources = []
 
-    if data['type'] == 'resource':
-        r = requests.post(resource_show_url, data={'id': data['id']})
-        resource = r.json()
-        resource['id'] = data['id']
-        resources.append(resource)
-        print resources
+    r = requests.post(resource_show_url, data={'id': data['resource_id']})
+    resource = r.json()
+    resources.append(resource)
+    print resources
 
     for resource in resources:
         excel_types = ['xls', 'application/ms-excel', 'application/xls',
@@ -136,7 +129,7 @@ def import_into_datastore(task_id, input):
 
         def send_request(records):
             print 'send request to', datastore_create_request_url
-            request = {'resource_id': resource['id'],
+            request = {'resource_id': data['resource_id'],
                        'fields': headers,
                        'records': records}
             r = requests.post(datastore_create_request_url,

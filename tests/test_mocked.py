@@ -63,8 +63,7 @@ class TestImport(unittest.TestCase):
             'job_type': 'import_into_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
-                'type': 'resource',
-                'id': self.resource_id
+                'resource_id': self.resource_id
             }
         }
 
@@ -81,8 +80,7 @@ class TestImport(unittest.TestCase):
             'job_type': 'import_into_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
-                'type': 'resource',
-                'id': self.resource_id
+                'resource_id': self.resource_id
             }
         }
 

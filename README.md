@@ -14,8 +14,7 @@ A service that migrates data to the CKAN datastore. Built on the [CKAN Service P
     'job_type': 'import_into_datastore',
     'metadata': {
         'ckan_url': 'http://www.ckan.org/',
-        'id': '3b2987d2-e0e8-413c-92f0-7f9bfe148adc',
-        'type': 'resource'  # later we will support: package, group, organization
+        'resource_id': '3b2987d2-e0e8-413c-92f0-7f9bfe148adc'
     }
 }
 ```
