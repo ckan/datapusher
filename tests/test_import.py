@@ -3,6 +3,7 @@ import json
 import uuid
 import time
 
+import nose
 from nose.tools import assert_equal
 import requests
 from httpretty import HTTPretty
@@ -34,6 +35,12 @@ class TestImport():
 
     @classmethod
     def setup_class(cls):
+        try:
+            r = requests.get('http://{0}/api/action/datastore_search?resource_id=_table_metadata'.format(config.CKAN_HOST))
+            if r.status_code not in [200, 201]:
+                raise nose.SkipTest("Need a CKAN with the datastore enabled")
+        except requests.ConnectionError:
+            raise nose.SkipTest("No CKAN running")
         cls.host = config.CKAN_HOST
         cls.api_key = config.USER_API_KEY
 
@@ -81,10 +88,9 @@ class TestImport():
         resource_id = self.make_resource_id()
 
         data = {
-            'metadata': {'key': 'value'},
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
-            'data': {
+            'metadata': {
                 'url': url,
                 'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
@@ -119,10 +125,9 @@ class TestImport():
         resource_id = self.make_resource_id()
 
         data = {
-            'metadata': {'key': 'value'},
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
-            'data': {
+            'metadata': {
                 'url': url,
                 'format': 'tsv',
                 'ckan_url': 'http://%s/' % self.host,
@@ -157,10 +162,9 @@ class TestImport():
         resource_id = self.make_resource_id()
 
         data = {
-            'metadata': {'key': 'value'},
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
-            'data': {
+            'metadata': {
                 'url': url,
                 'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
@@ -204,10 +208,9 @@ class TestImport():
         resource_id = self.make_resource_id()
 
         data = {
-            'metadata': {'key': 'value'},
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
-            'data': {
+            'metadata': {
                 'url': url,
                 'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,

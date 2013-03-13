@@ -3,11 +3,16 @@ import urllib2
 import requests
 import itertools
 import datetime
+import logging
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 import dataconverters.commas
 import dataconverters.xls
+
+logging.basicConfig()
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 TYPE_MAPPING = {
@@ -60,20 +65,17 @@ class DatastoreEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def validate_data(data):
-    if not 'url' in data:
+def validate_input(input):
+    if not 'url' in input['metadata']:
         raise util.JobError("Did not provide URL to resource.")
 
 
 @job.async
 def import_into_datastore(task_id, input):
-    """
-    Expected input dictionary with keys:
-        'url'
-    """
+    print "Input", input
 
-    data = input['data']
-    validate_data(data)
+    data = input['metadata']
+    validate_input(input)
 
     ckan_url = data['ckan_url'].rstrip('/')
     datastore_create_request_url = '%s/api/action/datastore_create' % (ckan_url)

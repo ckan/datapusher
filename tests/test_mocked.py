@@ -1,14 +1,14 @@
 import os
 import json
+import unittest
 
-from nose.tools import assert_equal
-import requests
 from httpretty import HTTPretty
 from httpretty import httprettified
 
 import ckanserviceprovider.web as web
 import systematicsquirrel.main as main
 import systematicsquirrel.jobs as jobs
+import ckanserviceprovider.util as util
 
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'settings_test.py')
@@ -25,7 +25,7 @@ def get_static_file(filename):
     return open(join_static_path(filename)).read()
 
 
-class TestImport():
+class TestImport(unittest.TestCase):
     @classmethod
     def setup_class(cls):
         cls.host = 'www.ckan.org'
@@ -33,7 +33,7 @@ class TestImport():
         cls.resource_id = 'foo-bar-42'
 
     @httprettified
-    def test_simple_csv_directly(self):
+    def test_simple_csv_basic(self):
         source_url = 'http://www.source.org/static/simple.csv'
         HTTPretty.register_uri(HTTPretty.GET, source_url,
                                body=get_static_file('simple.csv'),
@@ -50,10 +50,9 @@ class TestImport():
                                status=200)
 
         data = {
-            'metadata': {'key': 'value'},
             'apikey': self.api_key,
             'job_type': 'import_into_datastore',
-            'data': {
+            'metadata': {
                 'url': source_url,
                 'format': 'csv',
                 'ckan_url': 'http://%s/' % self.host,
@@ -62,3 +61,30 @@ class TestImport():
         }
 
         jobs.import_into_datastore(None, data)
+
+    @httprettified
+    def test_wrong_api_key(self):
+        source_url = 'http://www.source.org/static/simple.csv'
+        HTTPretty.register_uri(HTTPretty.GET, source_url,
+                               body=get_static_file('simple.csv'),
+                               content_type="application/csv",
+                               status=200)
+
+        datastore_url = 'http://www.ckan.org/api/action/datastore_create'
+        HTTPretty.register_uri(HTTPretty.POST, datastore_url,
+                               body=json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}}),
+                               content_type="application/json",
+                               status=403)
+
+        data = {
+            'apikey': self.api_key,
+            'job_type': 'import_into_datastore',
+            'metadata': {
+                'url': source_url,
+                'format': 'csv',
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        self.assertRaises(util.JobError, jobs.import_into_datastore, None, data)
