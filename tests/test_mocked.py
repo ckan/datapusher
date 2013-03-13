@@ -68,9 +68,12 @@ class TestImport(unittest.TestCase):
 
         jobs.import_into_datastore(None, data)
 
+        def create_handler_error(method, uri, headers):
+            return json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}})
+
         datastore_url = 'http://www.ckan.org/api/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
-                               body=json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}}),
+                               body=create_handler_error,
                                content_type="application/json",
                                status=403)
 
