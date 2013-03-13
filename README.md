@@ -1,4 +1,4 @@
-# ckan-importer-service
+# Systematic Squirrel
 
 __WORK IN PROGRESS__ - Expect release in mid 2013.
 

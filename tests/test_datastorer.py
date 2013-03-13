@@ -9,8 +9,8 @@ from httpretty import HTTPretty
 from httpretty import httprettified
 
 import ckanserviceprovider.web as web
-import importerservice.main as main
-import importerservice.datastorer as ds
+import systematicsquirrel.main as main
+import systematicsquirrel.jobs as jobs
 
 import settings_test as config
 
@@ -92,7 +92,7 @@ class TestDatastorer():
             }
         }
 
-        ds.import_into_datastore(None, data)
+        jobs.import_into_datastore(None, data)
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
@@ -130,7 +130,7 @@ class TestDatastorer():
             }
         }
 
-        ds.import_into_datastore(None, data)
+        jobs.import_into_datastore(None, data)
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
@@ -168,7 +168,7 @@ class TestDatastorer():
             }
         }
 
-        ds.import_into_datastore(None, data)
+        jobs.import_into_datastore(None, data)
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
