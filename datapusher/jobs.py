@@ -193,22 +193,23 @@ def get_resource(resource_id, ckan_url):
 
 def validate_input(input):
     # Especially validate metdata which is provided by the user
+    if not 'metadata' in input:
+        raise util.JobError('Metadata missing')
+
     data = input['metadata']
 
     if not 'resource_id' in data:
         raise util.JobError("No id provided.")
     if not 'ckan_url' in data:
         raise util.JobError("No ckan_url provided.")
-    if not data['ckan_url'].startswith('http'):
-        raise util.JobError('Schema in ckan_url missing (add http(s)://')
 
 
 @job.async
 def push_to_datastore(task_id, input):
     print "Input:", input
+    validate_input(input)
 
     data = input['metadata']
-    validate_input(input)
 
     ckan_url = data['ckan_url']
     resource_id = data['resource_id']
