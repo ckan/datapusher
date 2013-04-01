@@ -10,13 +10,13 @@ A service that migrates data to the CKAN datastore. Built on the [CKAN Service P
 
 Post the following data to `/job`
 
-```
+```json
 {
-    'apikey': 'my-secret-key',
-    'job_type': 'push_to_datastore',
-    'metadata': {
-        'ckan_url': 'http://www.ckan.org/',
-        'resource_id': '3b2987d2-e0e8-413c-92f0-7f9bfe148adc'
+    "apikey": "my-secret-key",
+    "job_type": "push_to_datastore",
+    "metadata': {
+        "ckan_url": "http://www.ckan.org/",
+        "resource_id": "3b2987d2-e0e8-413c-92f0-7f9bfe148adc"
     }
 }
 ```
