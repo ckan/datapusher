@@ -36,7 +36,7 @@ class TestImport():
     @classmethod
     def setup_class(cls):
         try:
-            r = requests.get('http://{0}/api/action/datastore_search?resource_id=_table_metadata'.format(config.CKAN_HOST))
+            r = requests.get('http://{0}/api/3/action/datastore_search?resource_id=_table_metadata'.format(config.CKAN_HOST))
             if r.status_code not in [200, 201]:
                 raise nose.SkipTest("Need a CKAN with the datastore enabled")
         except requests.ConnectionError:
@@ -53,7 +53,7 @@ class TestImport():
         while self.resource_ids:
             res_id = self.resource_ids.pop()
             request = {'resource_id': res_id}
-            r = requests.post('http://%s/api/action/datastore_delete' % self.host,
+            r = requests.post('http://%s/api/3/action/datastore_delete' % self.host,
                               data=json.dumps(request),
                               headers={'Content-Type': 'application/json',
                                        'Authorization': self.api_key}
@@ -65,7 +65,7 @@ class TestImport():
         ''' Create a resource in ckan and get back the id
         '''
         r = requests.post(
-            'http://%s/api/action/package_create' % self.host,
+            'http://%s/api/3/action/package_create' % self.host,
             data=json.dumps(
                 {'name': str(uuid.uuid4()),
                  'resources': [{'url': url, 'format': 'csv'}]}

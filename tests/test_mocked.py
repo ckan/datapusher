@@ -38,7 +38,7 @@ class TestImport(unittest.TestCase):
                                body=get_static_file('simple.csv'),
                                content_type="application/csv")
 
-        res_url = 'http://www.ckan.org/api/action/resource_show'
+        res_url = 'http://www.ckan.org/api/3/action/resource_show'
         HTTPretty.register_uri(HTTPretty.POST, res_url,
                                body=json.dumps({
                                    'success': True,
@@ -49,12 +49,12 @@ class TestImport(unittest.TestCase):
                                }),
                                content_type="application/json")
 
-        resource_update_url = 'http://www.ckan.org/api/action/resource_update'
+        resource_update_url = 'http://www.ckan.org/api/3/action/resource_update'
         HTTPretty.register_uri(HTTPretty.POST, resource_update_url,
                                body=json.dumps({'success': True}),
                                content_type="application/json")
 
-        datastore_del_url = 'http://www.ckan.org/api/action/datastore_delete'
+        datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
         HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
                                body=json.dumps({'success': True}),
                                content_type="application/json")
@@ -62,7 +62,7 @@ class TestImport(unittest.TestCase):
         def create_handler(method, uri, headers):
             return json.dumps({'success': True})
 
-        datastore_url = 'http://www.ckan.org/api/action/datastore_create'
+        datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
                                body=create_handler,
                                content_type="application/json")
@@ -88,7 +88,7 @@ class TestImport(unittest.TestCase):
         def create_handler_error(method, uri, headers):
             return json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}})
 
-        datastore_url = 'http://www.ckan.org/api/action/datastore_create'
+        datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
                                body=create_handler_error,
                                content_type="application/json",
