@@ -36,15 +36,6 @@ DATASTORE_URLS = {
 }
 
 
-def extract_content(response):
-    # get the error messaage or error json from response
-    try:
-        content = response.json()
-    except:
-        content = response.content[:200]
-    return content
-
-
 def get_url(action, ckan_url):
     """
     Get url for ckan action
@@ -64,12 +55,20 @@ def check_response(response, request_url, who):
         raise util.JobError('%s is not reponding, At: %s '
                             'Response: %s' % (who, request_url, response))
 
-    if not (response.status_code in (201, 200) and response.json().get('success')):
-        raise util.JobError('%s bad response. Status code: %s, At: %s, Response: %s' %
-                            (who,
-                             response.status_code,
-                             request_url,
-                             extract_content(response)))
+    try:
+        json_response = response.json()
+        if not (response.status_code in (201, 200) and json_response.get('success')):
+            raise util.JobError('%s bad response. Status code: %s, At: %s, Response: %s' % (
+                                who,
+                                response.status_code,
+                                request_url,
+                                json_response))
+    except ValueError:
+        raise util.JobError('%s bad response. Could not decode JSON. Status code: %s, At: %s, Response: %s' % (
+                            who,
+                            response.status_code,
+                            request_url,
+                            response.content[:200]))
 
 
 def get_parser(resource, content_type):
@@ -142,6 +141,22 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
         raise util.JobError("Deleting existing datastore failed.")
 
 
+def send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url):
+    """
+    Stores records in CKAN datastore
+    """
+    request = {'resource_id': resource_id,
+               'fields': headers,
+               'records': records}
+    url = get_url('datastore_create', ckan_url)
+    r = requests.post(url,
+                      data=json.dumps(request, cls=DatastoreEncoder),
+                      headers={'Content-Type': 'application/json',
+                               'Authorization': api_key},
+                      )
+    check_response(r, url, 'CKAN DataStore')
+
+
 def update_resource(resource, api_key, ckan_url):
     """
     Update webstore_url and webstore_last_updated in CKAN
@@ -160,22 +175,6 @@ def update_resource(resource, api_key, ckan_url):
                  'Authorization': api_key})
 
     check_response(r, url, 'CKAN')
-
-
-def send_to_datastore(resource_id, headers, records, api_key, ckan_url):
-    """
-    Stores records in CKAN datastore
-    """
-    request = {'resource_id': resource_id,
-               'fields': headers,
-               'records': records}
-    url = get_url('datastore_create', ckan_url)
-    r = requests.post(url,
-                      data=json.dumps(request, cls=DatastoreEncoder),
-                      headers={'Content-Type': 'application/json',
-                               'Authorization': api_key},
-                      )
-    check_response(r, url, 'CKAN DataStore')
 
 
 def get_resource(resource_id, ckan_url):
@@ -240,7 +239,7 @@ def push_to_datastore(task_id, input):
     count = 0
     for records in chunky(result, 100):
         count += len(records)
-        send_to_datastore(resource_id, headers, records, api_key, ckan_url)
+        send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
 
     #logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource['id']))
 
