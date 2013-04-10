@@ -204,7 +204,13 @@ def validate_input(input):
 
 
 @job.async
-def push_to_datastore(task_id, input):
+def push_to_datastore(task_id, input, dry_run=False):
+    '''Show link to documentation.
+
+    :param dry_run: Only fetch and parse the resource and return the results
+                    instead of storing it in the datastore (for testing)
+    :type dry_run: boolean
+    '''
     print "Input:", input
     validate_input(input)
 
@@ -219,7 +225,7 @@ def push_to_datastore(task_id, input):
     # fetch the resource data
     print "Fetching from:", resource.get('url')
     response = urllib2.urlopen(resource.get('url'))
-    content_type = response.info().getheader('content-type').split(';', 1)[0]  # remove parameters
+    content_type = response.info().getheader('content-type').split(';', 1)[0]
 
     parser, kwargs = get_parser(resource, content_type)
     result, metadata = parser.parse(response, strict_type_guess=True, **kwargs)
@@ -235,6 +241,9 @@ def push_to_datastore(task_id, input):
     headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in fields]
 
     print 'Headers:', headers
+
+    if dry_run:
+        return headers, result
 
     count = 0
     for records in chunky(result, 100):
