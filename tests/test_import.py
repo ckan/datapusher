@@ -1,7 +1,11 @@
+'''
+Test the whole process. This requires a running CKAN instance
+with the datastore activated.
+'''
+
 import os
 import json
 import uuid
-import time
 
 import nose
 from nose.tools import assert_equal

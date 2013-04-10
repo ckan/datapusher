@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+'''
+Test individual functions
+'''
+
 import json
 import unittest
 import requests

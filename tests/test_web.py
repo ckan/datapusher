@@ -1,3 +1,8 @@
+'''
+Test whether the service can be started properly and whether the
+configuration and the jobs are loaded.
+'''
+
 import os
 import json
 from nose.tools import assert_equal
