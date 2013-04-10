@@ -7,15 +7,18 @@ import jobs
 # check whether jobs have been imported properly
 assert(jobs.push_to_datastore)
 
+# for gunicorn
+app = web.app
+
 
 def serve():
     web.configure()
-    web.app.run()
+    web.run()
 
 
 def serve_test():
     web.configure()
-    return web.app.test_client()
+    return web.test_client()
 
 
 def main():

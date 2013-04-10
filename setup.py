@@ -16,10 +16,9 @@ setup(name='datapusher',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      install_requires=['''
-            ckanserviceprovider
-            dataconverters
-            Requests'''],
+      install_requires=['ckanserviceprovider',
+                        'dataconverters',
+                        'Requests'],
       entry_points={
             'console_scripts': [
                   'datapusher = datapusher.main:main'
