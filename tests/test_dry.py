@@ -7,7 +7,7 @@ import os
 import json
 import unittest
 import datetime
-from nose.tools import assert_equal
+from nose.tools import assert_equal, raises
 
 from httpretty import HTTPretty
 from httpretty import httprettified
@@ -54,17 +54,38 @@ class TestImport(unittest.TestCase):
                                        'format': format
                                    }
                                }),
-                               content_type="application/json")
+                               content_type='application/json')
 
         resource_update_url = 'http://www.ckan.org/api/3/action/resource_update'
         HTTPretty.register_uri(HTTPretty.POST, resource_update_url,
                                body=json.dumps({'success': True}),
-                               content_type="application/json")
+                               content_type='application/json')
 
         datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
         HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
                                body=json.dumps({'success': True}),
-                               content_type="application/json")
+                               content_type='application/json')
+
+    @httprettified
+    @raises(util.JobError)
+    def test_too_large_file(self):
+        self.register_urls()
+        data = {
+            'apikey': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+        source_url = 'http://www.source.org/static/file'
+        HTTPretty.register_uri(
+            HTTPretty.GET, source_url,
+            content_length=jobs.MAX_CONTENT_LENGTH + 1,
+            body=get_static_file('simple.csv'),
+            content_type='application/json')
+
+        jobs.push_to_datastore(None, data, True)
 
     @httprettified
     def test_simple_csv(self):

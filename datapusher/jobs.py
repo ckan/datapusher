@@ -19,6 +19,7 @@ log.setLevel(logging.DEBUG)
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
+MAX_CONTENT_LENGTH = 10485760  # 10MB
 
 TYPE_MAPPING = {
     'String': 'text',
@@ -226,9 +227,16 @@ def push_to_datastore(task_id, input, dry_run=False):
     # fetch the resource data
     print "Fetching from:", resource.get('url')
     response = urllib2.urlopen(resource.get('url'))
-    content_type = response.info().getheader('content-type').split(';', 1)[0]
 
-    parser, kwargs = get_parser(resource, content_type)
+    cl = response.info().getheader('content-length')
+    if cl and int(cl) > MAX_CONTENT_LENGTH:
+        raise util.JobError(
+            'Resource too large to download: {cl} > max ({max_cl}).'.format(
+            cl=cl, max_cl=MAX_CONTENT_LENGTH))
+
+    ct = response.info().getheader('content-type').split(';', 1)[0]
+
+    parser, kwargs = get_parser(resource, ct)
     result, metadata = parser.parse(response, strict_type_guess=True, **kwargs)
 
     '''
