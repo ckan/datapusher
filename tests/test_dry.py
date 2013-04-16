@@ -130,3 +130,40 @@ class TestImport(unittest.TestCase):
         assert_equal(results[0],
                      {u'date': datetime.datetime(2011, 1, 1, 0, 0),
                       u'place': u'Galway', u'temperature': 1})
+
+    @httprettified
+    def test_real_csv(self):
+        self.register_urls('october_2011.csv', 'csv')
+        data = {
+            'apikey': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        headers, results = jobs.push_to_datastore(None, data, True)
+        results = list(results)
+        assert_equal(headers, [{'type': 'text', 'id': u'Directorate'},
+                               {'type': 'text', 'id': u'Service Area'},
+                               {'type': 'text', 'id': u'Expenditure Category'},
+                               {'type': 'timestamp', 'id': u'Payment Date'},
+                               {'type': 'text', 'id': u'Supplier Name'},
+                               {'type': 'numeric', 'id': u'Internal Ref'},
+                               {'type': 'text', 'id': u'Capital/ Revenue'},
+                               {'type': 'text', 'id': u'Cost Centre'},
+                               {'type': 'text', 'id': u'Cost Centre Description'},
+                               {'type': 'float', 'id': u'Grand Total'}])
+        assert_equal(len(results), 230)
+        assert_equal(results[0],
+                     {u'Directorate': u'Adult and Culture',
+                      u'Service Area': u'Ad Serv-Welfare Rights-    ',
+                      u'Expenditure Category': u'Supplies & Services',
+                      u'Cost Centre Description': u'WELFARE RIGHTS WORKERS       M',
+                      u'Capital/ Revenue': u'Revenue',
+                      u'Grand Total': 828.0,
+                      u'Payment Date': datetime.datetime(2011, 10, 24, 0, 0),
+                      u'Internal Ref': 5277184,
+                      u'Cost Centre': u'1MR48',
+                      u'Supplier Name': u'ALBANY OFFICE FURNITURE SOLUTIONS'})
