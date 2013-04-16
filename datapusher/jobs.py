@@ -78,7 +78,8 @@ def get_parser(resource, content_type):
     """
     excel_types = ['xls', 'application/ms-excel', 'application/xls',
                    'application/vnd.ms-excel']
-    excel_xml_types = ['xlsx']
+    excel_xml_types = ['xlsx',
+                       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
     tsv_types = ['tsv', 'text/tsv', 'text/tab-separated-values']
     csv_types = ['csv', 'text/csv', 'text/comma-separated-values']
     #zipped_types = ['application/zip']
