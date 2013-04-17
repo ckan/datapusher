@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Test the whole datapusher but do not push to the datastore.
 The difference to the integration tests is that these tests can
@@ -134,7 +135,7 @@ class TestImport(unittest.TestCase):
 
     @httprettified
     def test_simple_xls(self):
-        self.register_urls('simple.xls', 'xls', '')
+        self.register_urls('simple.xls', 'xls', 'application/vnd.ms-excel')
         data = {
             'apikey': self.api_key,
             'job_type': 'push_to_datastore',
@@ -190,3 +191,22 @@ class TestImport(unittest.TestCase):
                       u'Internal Ref': 5277184,
                       u'Cost Centre': u'1MR48',
                       u'Supplier Name': u'ALBANY OFFICE FURNITURE SOLUTIONS'})
+
+    @httprettified
+    def test_weird_header(self):
+        self.register_urls('weird_head_padding.csv', 'csv')
+        data = {
+            'apikey': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        headers, results = jobs.push_to_datastore(None, data, True)
+        results = list(results)
+        assert_equal(len(headers), 11)
+        assert_equal(len(results), 82)
+        assert_equal(headers[1]['id'].strip(), u'1985')
+        assert_equal(results[1]['column_1'].strip(), u'Gefäßchirurgie')

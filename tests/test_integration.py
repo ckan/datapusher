@@ -7,7 +7,7 @@ import os
 import json
 import uuid
 
-import nose
+from nose import SkipTest
 from nose.tools import assert_equal
 import requests
 from httpretty import HTTPretty
@@ -42,9 +42,9 @@ class TestImport():
         try:
             r = requests.get('http://{0}/api/3/action/datastore_search?resource_id=_table_metadata'.format(config.CKAN_HOST))
             if r.status_code not in [200, 201]:
-                raise nose.SkipTest("Need a CKAN with the datastore enabled")
+                raise SkipTest("Need a CKAN with the datastore enabled")
         except requests.ConnectionError:
-            raise nose.SkipTest("No CKAN running")
+            raise SkipTest("No CKAN running")
         cls.host = config.CKAN_HOST
         cls.api_key = config.USER_API_KEY
 
