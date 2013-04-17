@@ -1,6 +1,8 @@
 '''
-Test the whole datapusher but mock the datastore. The difference to the import tests
-is that these tests can run on travis without a running CKAN and datastore.
+Test the whole datapusher but do not push to the datastore.
+The difference to the integration tests is that these tests can
+run on travis without a running CKAN and datastore. These testsdo not
+mock the datastore but instead set the dry-run variable.
 '''
 
 import os
