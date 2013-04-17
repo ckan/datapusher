@@ -22,6 +22,8 @@ Post the following data to `/job`
 }
 ```
 
+Read more about the API at http://ckan-service-provider.readthedocs.org/en/latest/
+
 ## Deployment
 
 The datapusher is a standard flask app so you can choose your preferred [way of deployment](http://flask.pocoo.org/docs/deploying/). in the following we will explain a set up with postgres, nginx and gunicorn.
