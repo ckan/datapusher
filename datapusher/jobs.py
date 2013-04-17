@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 import json
 import urllib2
+import socket
 import requests
 import urlparse
 import itertools
@@ -20,6 +22,7 @@ if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = 10485760  # 10MB
+DOWNLOAD_TIMEOUT = 30
 
 TYPE_MAPPING = {
     'String': 'text',
@@ -226,7 +229,13 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # fetch the resource data
     print "Fetching from:", resource.get('url')
-    response = urllib2.urlopen(resource.get('url'))
+    try:
+        response = urllib2.urlopen(resource.get('url'), timeout=DOWNLOAD_TIMEOUT)
+    except urllib2.HTTPError, e:
+        raise util.JobError('Invalid HTTP response: %s' % e)
+    except urllib2.URLError, e:
+        if isinstance(e.reason, socket.timeout):
+            raise util.JobError('Connection timed out after %ss' % DOWNLOAD_TIMEOUT)
 
     cl = response.info().getheader('content-length')
     if cl and int(cl) > MAX_CONTENT_LENGTH:
