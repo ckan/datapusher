@@ -139,11 +139,10 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
                                           'Authorization': api_key}
                                  )
         if not response.status_code or response.status_code not in (200, 404):
-            # skips 200 (OK)
-            # or 404 (datastore does not exist, no need to delete it)
-            raise util.JobError("Deleting existing datastore failed.")
+            raise util.JobError('''Deleting existing datastore failed.
+                Status code: %s, Response: %s''' % (response.status_code, response.content))
     except requests.exceptions.RequestException:
-        raise util.JobError("Deleting existing datastore failed.")
+        raise util.JobError('Deleting existing datastore failed.')
 
 
 def send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url):

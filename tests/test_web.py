@@ -19,6 +19,6 @@ class TestWeb():
 
     def test_status(self):
         rv = app.get('/status')
-        assert_equal(json.loads(rv.data), dict(version=0.1,
-                     job_types=['push_to_datastore'],
-                     name='datapusher'))
+        result_dict = json.loads(rv.data)
+        assert_equal(result_dict['job_types'], ['push_to_datastore'])
+        assert_equal(result_dict['name'], 'datapusher')
