@@ -8,6 +8,7 @@ import itertools
 import datetime
 import logging
 import locale
+import pprint
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -70,7 +71,7 @@ def check_response(response, request_url, who, good_status=(201, 200)):
                                 who,
                                 response.status_code,
                                 request_url,
-                                json_response))
+                                pprint.pformat(json_response)))
     except ValueError:
         raise util.JobError('%s bad response. Could not decode JSON. Status code: %s, At: %s, Response: %s' % (
                             who,
