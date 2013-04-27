@@ -14,10 +14,10 @@ Post the following data to `/job`
 
 ```json
 {
-    "apikey": "my-secret-key",
+    "api_key": "my-secret-key",
     "job_type": "push_to_datastore",
     "result_url": "https://www.ckan.org/datapusher/callback",
-    "metadata': {
+    "metadata": {
         "ckan_url": "http://www.ckan.org/",
         "resource_id": "3b2987d2-e0e8-413c-92f0-7f9bfe148adc"
     }
