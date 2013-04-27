@@ -51,17 +51,21 @@ def get_url(action, ckan_url):
         ckan_url=ckan_url, action=action)
 
 
-def check_response(response, request_url, who):
+def check_response(response, request_url, who, good_status=(201, 200)):
     """
     Checks the response and raises exceptions if something went terribly wrong
+
+    :param who: A short name that indicated where the error occurred (for example "CKAN")
+    :param good_status: Status codes that should not raise an exception
+
     """
     if not response.status_code:
-        raise util.JobError('%s is not reponding, At: %s '
+        raise util.JobError('%s is not responding, At: %s '
                             'Response: %s' % (who, request_url, response))
 
     try:
         json_response = response.json()
-        if not (response.status_code in (201, 200) and json_response.get('success')):
+        if not (response.status_code in good_status and json_response.get('success')):
             raise util.JobError('%s bad response. Status code: %s, At: %s, Response: %s' % (
                                 who,
                                 response.status_code,
@@ -133,14 +137,13 @@ class DatastoreEncoder(json.JSONEncoder):
 
 def delete_datastore_resource(resource_id, api_key, ckan_url):
     try:
-        response = requests.post(get_url('datastore_delete', ckan_url),
+        delete_url = get_url('datastore_delete', ckan_url)
+        response = requests.post(delete_url,
                                  data=json.dumps({'resource_id': resource_id}),
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
-        if not response.status_code or response.status_code not in (200, 404):
-            raise util.JobError('''Deleting existing datastore failed.
-                Status code: %s, Response: %s''' % (response.status_code, response.content))
+        check_response(response, delete_url, 'CKAN', good_status=(201, 200, 404))
     except requests.exceptions.RequestException:
         raise util.JobError('Deleting existing datastore failed.')
 
