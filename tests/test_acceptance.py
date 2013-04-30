@@ -85,7 +85,6 @@ class TestImport(unittest.TestCase):
         HTTPretty.register_uri(
             HTTPretty.GET, source_url,
             content_length=jobs.MAX_CONTENT_LENGTH + 1,
-            body=get_static_file('simple.csv'),
             content_type='application/json')
 
         jobs.push_to_datastore(None, data, True)

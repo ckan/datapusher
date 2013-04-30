@@ -9,8 +9,7 @@ import requests
 
 from nose.tools import assert_equal, raises
 
-from httpretty import HTTPretty
-from httpretty import httprettified
+import httpretty
 
 import datapusher.jobs as jobs
 import ckanserviceprovider.util as util
@@ -76,90 +75,78 @@ class TestValidation(unittest.TestCase):
 
 
 class TestCkanActionCalls(unittest.TestCase):
-    @httprettified
+    @httpretty.activate
     def test_get_resource(self):
-        def handler(method, uri, headers):
-            return json.dumps({
-                'success': True,
-                'result': {
-                    'foo': 42
-                }})
-
         url = 'http://www.ckan.org/api/3/action/resource_show'
-        HTTPretty.register_uri(HTTPretty.POST, url,
-                               body=handler,
+        httpretty.register_uri(httpretty.POST, url,
+                               body=json.dumps({
+                                   'success': True,
+                                   'result': {
+                                       'foo': 42
+                                   }}),
                                content_type="application/json")
         resource = jobs.get_resource('an_id', 'http://www.ckan.org/')
         assert_equal(resource, {'foo': 42})
 
-    @httprettified
+    @httpretty.activate
     def test_delete_datastore(self):
-        def handler(method, uri, headers):
-            return json.dumps({'success': True})
-
         url = 'http://www.ckan.org/api/3/action/datastore_delete'
-        HTTPretty.register_uri(HTTPretty.POST, url,
-                               body=handler,
+        httpretty.register_uri(httpretty.POST, url,
+                               body=u'{"success": true}',
                                content_type="application/json")
         jobs.delete_datastore_resource('an_id', 'my_key', 'http://www.ckan.org/')
 
-    @httprettified
+    @httpretty.activate
     def test_resource_update(self):
-        def handler(method, uri, headers):
-            return json.dumps({'success': True})
-
         url = 'http://www.ckan.org/api/3/action/resource_update'
-        HTTPretty.register_uri(HTTPretty.POST, url,
-                               body=handler,
+        httpretty.register_uri(httpretty.POST, url,
+                               body=u'{"success": true}',
                                content_type="application/json")
         jobs.update_resource({'foo': 42}, 'my_key', 'http://www.ckan.org/')
 
-    @httprettified
+    @httpretty.activate
     def test_send_resource_to_datastore(self):
-        def handler(method, uri, headers):
-            return json.dumps({'success': True})
-
         url = 'http://www.ckan.org/api/3/action/datastore_create'
-        HTTPretty.register_uri(HTTPretty.POST, url,
-                               body=handler,
+        httpretty.register_uri(httpretty.POST, url,
+                               body=u'{"success": true}',
                                content_type="application/json")
         jobs.send_resource_to_datastore('an_id', [], [], 'my_key', 'http://www.ckan.org/')
 
 
 class TestCheckResponse(unittest.TestCase):
-    @httprettified
+    @httpretty.activate
     @raises(util.JobError)
     def test_text_200_with_broken_json(self):
-        HTTPretty.register_uri(HTTPretty.GET, 'http://www.ckan.org/',
+        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
                                body=u"This is someone's text. With ümlauts.",
                                content_type='html/text',
                                status=200)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
 
-    @httprettified
+    @httpretty.activate
     def test_text_200(self):
-        HTTPretty.register_uri(HTTPretty.GET, 'http://www.ckan.org/',
+        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
                                body=u'{"success": true}',
                                content_type='html/text',
                                status=200)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
 
-    @httprettified
+    @httpretty.activate
     @raises(util.JobError)
     def test_text_200_with_false_success(self):
-        HTTPretty.register_uri(HTTPretty.GET, 'http://www.ckan.org/',
+        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
                                body=u'{"success": false}',
                                content_type='html/text',
                                status=200)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
 
-    @httprettified
+    @httpretty.activate
     @raises(util.JobError)
     def test_text_404(self):
-        HTTPretty.register_uri(HTTPretty.GET, 'http://www.ckan.org/',
+        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
                                body=u'{"success": true}',
                                content_type='html/text',
                                status=404)

@@ -56,20 +56,17 @@ class TestImport(unittest.TestCase):
 
         resource_update_url = 'http://www.ckan.org/api/3/action/resource_update'
         HTTPretty.register_uri(HTTPretty.POST, resource_update_url,
-                               body=json.dumps({'success': True}),
+                               body=u'{"success": true}',
                                content_type="application/json")
 
         datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
         HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
-                               body=json.dumps({'success': True}),
+                               body=u'{"success": true}',
                                content_type="application/json")
-
-        def create_handler(method, uri, headers):
-            return json.dumps({'success': True})
 
         datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
-                               body=create_handler,
+                               body=u'{"success": true}',
                                content_type="application/json")
 
     @httprettified
@@ -90,12 +87,13 @@ class TestImport(unittest.TestCase):
     def test_wrong_api_key(self):
         self.register_urls()
 
-        def create_handler_error(method, uri, headers):
-            return json.dumps({'success': False, 'error': {'message': 'Zugriff verweigert', '__type': 'Authorization Error'}})
-
         datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
         HTTPretty.register_uri(HTTPretty.POST, datastore_url,
-                               body=create_handler_error,
+                               body=json.dumps({
+                                   'success': False,
+                                   'error': {
+                                       'message': 'Zugriff verweigert',
+                                       '__type': 'Authorization Error'}}),
                                content_type="application/json",
                                status=403)
 
