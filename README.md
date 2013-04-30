@@ -30,17 +30,15 @@ Read more about the API at http://ckan-service-provider.readthedocs.org/en/lates
 
 ## Deployment
 
-The Data Pusher is a flask application so you can choose your preferred [way of deployment](http://flask.pocoo.org/docs/deploying/). The following is just an example and not the only possible way to deploy the Data Pusher.
-
-This is work in progress!
+The Data Pusher is a flask application so you can choose your preferred [way of deployment](http://flask.pocoo.org/docs/deploying/). The following is just an example and not the only possible way to deploy the Data Pusher. Also note that some steps will vary on your system. Don't just copy and paste the commands!
 
 ### Install dependencies
 
-`sudo apt-get install python-dev postgresql libpq-dev python-pip python-virtualenv git-core uwsgi nginx`
+`sudo apt-get install python-dev postgresql libpq-dev python-pip python-virtualenv git-core uWSGI nginx`
 
 ### Create a virtual environment and install the Data Pusher
 
-```
+```bash
 virtualenv venv
 source venv/bin/activate
 git clone git://github.com/okfn/datapusher.git
@@ -48,24 +46,45 @@ cd datapusher
 python setup.py develop
 ```
 
-### Edit the web server configuration and restart the server
-
-...
-
 ### Install postgres and create a database
 
 Install `psycopg2` because it is not a default package
-`pip install psycopg2`
 
-### Edit the Data Pusher configuration
+```bash
+pip install psycopg2
+```
 
-`cp settings_local.py.tmpl settings_local.py`
-`vim settings_local.py`
+### Duplicate and edit the Data Pusher configuration
 
-### Start the Data Pusher service
+```bash
+cp settings_local.py.tmpl settings_production.py
+vim settings_local.py
+```
 
-...
+### Test the configuration
 
+At this point, you can start the Data Pusher temporarily and see whether you get any errors.
+
+```bash
+python datapusher/main.py {PATH TO SETTINGS FILE}
+```
+
+### Edit the web server configuration and restart the server
+
+Make sure that you have you nginx configured to serve uWSGI. You can find instructions for that at http://flask.pocoo.org/docs/deploying/uWSGI/.
+
+You will also need to configure uWSGI. To avoid problems with handles to the database, make sure to add `lazy = true` to your uWSGI config.
+
+Finally, restart uWSGI and nginx.
+
+```bash
+sudo service uWSGI restart pusher
+sudo service nginx restart
+```
+
+### You're done!
+
+Head over to `{SERVER URL}/status` to see whether the service is running correctly.
 
 ## Developers
 
