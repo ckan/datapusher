@@ -7,8 +7,7 @@ import os
 import json
 import unittest
 
-from httpretty import HTTPretty
-from httpretty import httprettified
+import httpretty
 
 import ckanserviceprovider.web as web
 import datapusher.main as main
@@ -39,12 +38,12 @@ class TestImport(unittest.TestCase):
 
     def register_urls(self):
         source_url = 'http://www.source.org/static/simple.csv'
-        HTTPretty.register_uri(HTTPretty.GET, source_url,
+        httpretty.register_uri(httpretty.GET, source_url,
                                body=get_static_file('simple.csv'),
                                content_type="application/csv")
 
         res_url = 'http://www.ckan.org/api/3/action/resource_show'
-        HTTPretty.register_uri(HTTPretty.POST, res_url,
+        httpretty.register_uri(httpretty.POST, res_url,
                                body=json.dumps({
                                    'success': True,
                                    'result': {
@@ -55,21 +54,21 @@ class TestImport(unittest.TestCase):
                                content_type="application/json")
 
         resource_update_url = 'http://www.ckan.org/api/3/action/resource_update'
-        HTTPretty.register_uri(HTTPretty.POST, resource_update_url,
+        httpretty.register_uri(httpretty.POST, resource_update_url,
                                body=u'{"success": true}',
                                content_type="application/json")
 
         datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
-        HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
+        httpretty.register_uri(httpretty.POST, datastore_del_url,
                                body=u'{"success": true}',
                                content_type="application/json")
 
         datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
-        HTTPretty.register_uri(HTTPretty.POST, datastore_url,
+        httpretty.register_uri(httpretty.POST, datastore_url,
                                body=u'{"success": true}',
                                content_type="application/json")
 
-    @httprettified
+    @httpretty.activate
     def test_simple_csv_basic(self):
         self.register_urls()
         data = {
@@ -83,12 +82,12 @@ class TestImport(unittest.TestCase):
 
         jobs.push_to_datastore(None, data)
 
-    @httprettified
+    @httpretty.activate
     def test_wrong_api_key(self):
         self.register_urls()
 
         datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
-        HTTPretty.register_uri(HTTPretty.POST, datastore_url,
+        httpretty.register_uri(httpretty.POST, datastore_url,
                                body=json.dumps({
                                    'success': False,
                                    'error': {

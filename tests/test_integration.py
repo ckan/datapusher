@@ -10,8 +10,8 @@ import uuid
 from nose import SkipTest
 from nose.tools import assert_equal
 import requests
-from httpretty import HTTPretty
-from httpretty import httprettified
+
+import httpretty
 
 import ckanserviceprovider.web as web
 import datapusher.main as main
@@ -83,10 +83,10 @@ class TestImport():
         self.resource_ids.append(res_id)
         return res_id
 
-    @httprettified
+    @httpretty.activate
     def test_simple_csv_directly(self):
         url = 'http://www.ckan.org/static/simple.csv'
-        HTTPretty.register_uri(HTTPretty.GET, url,
+        httpretty.register_uri(httpretty.GET, url,
                                body=get_static_file('simple.csv'),
                                content_type="application/csv")
         resource_id = self.make_resource_id(url)

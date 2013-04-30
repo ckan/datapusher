@@ -12,8 +12,7 @@ import unittest
 import datetime
 from nose.tools import assert_equal, raises
 
-from httpretty import HTTPretty
-from httpretty import httprettified
+import httpretty
 
 import ckanserviceprovider.web as web
 import datapusher.main as main
@@ -44,12 +43,12 @@ class TestImport(unittest.TestCase):
 
     def register_urls(self, filename='simple.csv', format='CSV', content_type='application/csv'):
         source_url = 'http://www.source.org/static/file'
-        HTTPretty.register_uri(HTTPretty.GET, source_url,
+        httpretty.register_uri(httpretty.GET, source_url,
                                body=get_static_file(filename),
                                content_type=content_type)
 
         res_url = 'http://www.ckan.org/api/3/action/resource_show'
-        HTTPretty.register_uri(HTTPretty.POST, res_url,
+        httpretty.register_uri(httpretty.POST, res_url,
                                body=json.dumps({
                                    'success': True,
                                    'result': {
@@ -60,16 +59,16 @@ class TestImport(unittest.TestCase):
                                content_type='application/json')
 
         resource_update_url = 'http://www.ckan.org/api/3/action/resource_update'
-        HTTPretty.register_uri(HTTPretty.POST, resource_update_url,
+        httpretty.register_uri(httpretty.POST, resource_update_url,
                                body=json.dumps({'success': True}),
                                content_type='application/json')
 
         datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
-        HTTPretty.register_uri(HTTPretty.POST, datastore_del_url,
+        httpretty.register_uri(httpretty.POST, datastore_del_url,
                                body=json.dumps({'success': True}),
                                content_type='application/json')
 
-    @httprettified
+    @httpretty.activate
     @raises(util.JobError)
     def test_too_large_file(self):
         self.register_urls()
@@ -82,14 +81,14 @@ class TestImport(unittest.TestCase):
             }
         }
         source_url = 'http://www.source.org/static/file'
-        HTTPretty.register_uri(
-            HTTPretty.GET, source_url,
+        httpretty.register_uri(
+            httpretty.GET, source_url,
             content_length=jobs.MAX_CONTENT_LENGTH + 1,
             content_type='application/json')
 
         jobs.push_to_datastore(None, data, True)
 
-    @httprettified
+    @httpretty.activate
     def test_simple_csv(self):
         self.register_urls()
         data = {
@@ -110,7 +109,7 @@ class TestImport(unittest.TestCase):
         assert_equal(results[0],
                      {u'date': datetime.datetime(2011, 1, 1, 0, 0), u'place': u'Galway', u'temperature': 1})
 
-    @httprettified
+    @httpretty.activate
     def test_simple_tsv(self):
         self.register_urls('simple.tsv', 'tsv', 'application/csv')
         data = {
@@ -132,7 +131,7 @@ class TestImport(unittest.TestCase):
                      {u'date': datetime.datetime(2011, 1, 1, 0, 0),
                       u'place': u'Galway', u'temperature': 1})
 
-    @httprettified
+    @httpretty.activate
     def test_simple_xls(self):
         self.register_urls('simple.xls', 'xls', 'application/vnd.ms-excel')
         data = {
@@ -154,7 +153,7 @@ class TestImport(unittest.TestCase):
                      {u'date': datetime.datetime(2011, 1, 1, 0, 0),
                       u'place': u'Galway', u'temperature': 1})
 
-    @httprettified
+    @httpretty.activate
     def test_real_csv(self):
         self.register_urls('october_2011.csv', 'csv')
         data = {
@@ -191,7 +190,7 @@ class TestImport(unittest.TestCase):
                       u'Cost Centre': u'1MR48',
                       u'Supplier Name': u'ALBANY OFFICE FURNITURE SOLUTIONS'})
 
-    @httprettified
+    @httpretty.activate
     def test_weird_header(self):
         self.register_urls('weird_head_padding.csv', 'csv')
         data = {
