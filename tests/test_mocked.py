@@ -72,7 +72,7 @@ class TestImport(unittest.TestCase):
     def test_simple_csv_basic(self):
         self.register_urls()
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -97,7 +97,7 @@ class TestImport(unittest.TestCase):
                                status=403)
 
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,

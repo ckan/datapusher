@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import urllib2
 import socket
@@ -42,38 +44,43 @@ def get_url(action, ckan_url):
     Get url for ckan action
     """
     if not urlparse.urlsplit(ckan_url).scheme:
-        ckan_url = u'http://' + ckan_url.lstrip('/')
+        ckan_url = 'http://' + ckan_url.lstrip('/')
     ckan_url = ckan_url.rstrip('/')
     return '{ckan_url}/api/3/action/{action}'.format(
         ckan_url=ckan_url, action=action)
 
 
-def check_response(response, request_url, who, good_status=(201, 200)):
+def check_response(response, request_url, who, good_status=(201, 200), ignore_no_success=False):
     """
     Checks the response and raises exceptions if something went terribly wrong
 
-    :param who: A short name that indicated where the error occurred (for example "CKAN")
+    :param who: A short name that indicated where the error occurred
+                (for example "CKAN")
     :param good_status: Status codes that should not raise an exception
 
     """
     if not response.status_code:
-        raise util.JobError('%s is not responding, At: %s '
-                            'Response: %s' % (who, request_url, response))
+        raise util.JobError('{who} bad response. Status code: {code}, At: {url}'.format(
+            who=who,
+            url=request_url,
+            resp=response))
 
+    message = '{who} bad response. Status code: {code}, At: {url}, Response: {resp}'
     try:
-        json_response = response.json()
-        if not (response.status_code in good_status and json_response.get('success')):
-            raise util.JobError('%s bad response. Status code: %s, At: %s, Response: %s' % (
-                                who,
-                                response.status_code,
-                                request_url,
-                                pprint.pformat(json_response)))
+        if not response.status_code in good_status:
+            json_response = response.json()
+            if not ignore_no_success or json_response.get('success'):
+                raise util.JobError(message.format(
+                                    who=who,
+                                    code=response.status_code,
+                                    url=request_url,
+                                    resp=pprint.pformat(json_response)))
     except ValueError:
-        raise util.JobError('%s bad response. Could not decode JSON. Status code: %s, At: %s, Response: %s' % (
-                            who,
-                            response.status_code,
-                            request_url,
-                            response.content[:200]))
+        raise util.JobError(message.format(
+                            who=who,
+                            code=response.status_code,
+                            url=request_url,
+                            resp=response.text[:200]))
 
 
 def get_parser(resource, content_type):
@@ -140,7 +147,8 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
-        check_response(response, delete_url, 'CKAN', good_status=(201, 200, 404))
+        check_response(response, delete_url, 'CKAN',
+                       good_status=(201, 200, 404), ignore_no_success=True)
     except requests.exceptions.RequestException:
         raise util.JobError('Deleting existing datastore failed.')
 
@@ -202,9 +210,11 @@ def validate_input(input):
     data = input['metadata']
 
     if not 'resource_id' in data:
-        raise util.JobError("No id provided.")
+        raise util.JobError('No id provided.')
     if not 'ckan_url' in data:
-        raise util.JobError("No ckan_url provided.")
+        raise util.JobError('No ckan_url provided.')
+    if not input.get('api_key'):
+        raise util.JobError('No CKAN API key provided')
 
 
 @job.async
@@ -220,19 +230,19 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
-    logger.info(u'Input {0}'.format(input))
+    logger.info('Input {0}'.format(input))
     validate_input(input)
 
     data = input['metadata']
 
     ckan_url = data['ckan_url']
     resource_id = data['resource_id']
-    api_key = data.get('api_key')
+    api_key = input.get('api_key')
 
     resource = get_resource(resource_id, ckan_url)
 
     # fetch the resource data
-    logger.info(u'Fetching from: {0}'.format(resource.get('url')))
+    logger.info('Fetching from: {0}'.format(resource.get('url')))
     try:
         response = urllib2.urlopen(resource.get('url'), timeout=DOWNLOAD_TIMEOUT)
     except urllib2.HTTPError, e:
@@ -262,7 +272,7 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
     fields = metadata['fields']
     headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in fields]
 
-    logger.info(u'Found headers and types: {headers}'.format(headers=headers))
+    logger.info('Found headers and types: {headers}'.format(headers=headers))
 
     if dry_run:
         return headers, result
@@ -272,6 +282,6 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
         count += len(records)
         send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
 
-    logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource_id))
+    logger.info('There should be {n} entries in {res_id}.'.format(n=count, res_id=resource_id))
 
     update_resource(resource, api_key, ckan_url)

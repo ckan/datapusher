@@ -92,7 +92,7 @@ class TestImport():
         resource_id = self.make_resource_id(url)
 
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -100,7 +100,7 @@ class TestImport():
             }
         }
 
-        jobs.push_to_datastore(None, data)
+        jobs.push_to_datastore(None, data, web.queue)
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),

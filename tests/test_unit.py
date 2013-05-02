@@ -48,13 +48,15 @@ class TestValidation(unittest.TestCase):
             'metadata': {
                 'resource_id': 'h32jk4h34k5',
                 'ckan_url': 'http://www.ckan.org'
-            }
+            },
+            'api_key': u'köi'
         })
 
     @raises(util.JobError)
     def test_validate_input_raises_if_metadata_missing(self):
         jobs.validate_input({
-            'foo': {}
+            'foo': {},
+            'api_key': 'my-key'
         })
 
     @raises(util.JobError)
@@ -62,7 +64,8 @@ class TestValidation(unittest.TestCase):
         jobs.validate_input({
             'metadata': {
                 'ckan_url': 'http://www.ckan.org'
-            }
+            },
+            'api_key': 'my-key'
         })
 
     @raises(util.JobError)
@@ -70,6 +73,16 @@ class TestValidation(unittest.TestCase):
         jobs.validate_input({
             'metadata': {
                 'resource_id': 'h32jk4h34k5'
+            },
+            'api_key': 'my-key'
+        })
+
+    @raises(util.JobError)
+    def test_validate_api_key(self):
+        jobs.validate_input({
+            'metadata': {
+                'resource_id': 'h32jk4h34k5',
+                'ckan_url': 'http://www.ckan.org'
             }
         })
 
@@ -116,11 +129,11 @@ class TestCkanActionCalls(unittest.TestCase):
 class TestCheckResponse(unittest.TestCase):
     @httpretty.activate
     @raises(util.JobError)
-    def test_text_200_with_broken_json(self):
+    def test_text_409_with_broken_json(self):
         httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
                                body=u"This is someone's text. With ümlauts.",
                                content_type='html/text',
-                               status=200)
+                               status=409)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
 
@@ -135,11 +148,11 @@ class TestCheckResponse(unittest.TestCase):
 
     @httpretty.activate
     @raises(util.JobError)
-    def test_text_200_with_false_success(self):
+    def test_text_500_with_false_success(self):
         httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
                                body=u'{"success": false}',
                                content_type='html/text',
-                               status=200)
+                               status=500)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
 
@@ -152,3 +165,12 @@ class TestCheckResponse(unittest.TestCase):
                                status=404)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
+
+    @httpretty.activate
+    def test_text_404_ignore(self):
+        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
+                               body=u'{"success": true}',
+                               content_type='html/text',
+                               status=404)
+        r = requests.get('http://www.ckan.org/')
+        jobs.check_response(r, 'http://www.ckan.org/', 'Me', good_status=(200, 201, 404))

@@ -38,7 +38,7 @@ class TestImport(unittest.TestCase):
     @classmethod
     def setup_class(cls):
         cls.host = 'www.ckan.org'
-        cls.api_key = 'my-key'
+        cls.api_key = 'my-fake-key'
         cls.resource_id = 'foo-bar-42'
 
     def register_urls(self, filename='simple.csv', format='CSV', content_type='application/csv'):
@@ -73,7 +73,7 @@ class TestImport(unittest.TestCase):
     def test_too_large_file(self):
         self.register_urls()
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -91,10 +91,29 @@ class TestImport(unittest.TestCase):
         jobs.push_to_datastore(None, data, web.queue, True)
 
     @httpretty.activate
+    def test_delete_404(self):
+        self.register_urls()
+        datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
+        httpretty.register_uri(httpretty.POST, datastore_del_url,
+                               status=404,
+                               body=json.dumps({'success': False}),
+                               content_type='application/json')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+
+    @httpretty.activate
     def test_simple_csv(self):
         self.register_urls()
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -115,7 +134,7 @@ class TestImport(unittest.TestCase):
     def test_simple_tsv(self):
         self.register_urls('simple.tsv', 'tsv', 'application/csv')
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -137,7 +156,7 @@ class TestImport(unittest.TestCase):
     def test_simple_xls(self):
         self.register_urls('simple.xls', 'xls', 'application/vnd.ms-excel')
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -159,7 +178,7 @@ class TestImport(unittest.TestCase):
     def test_real_csv(self):
         self.register_urls('october_2011.csv', 'csv')
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
@@ -196,7 +215,7 @@ class TestImport(unittest.TestCase):
     def test_weird_header(self):
         self.register_urls('weird_head_padding.csv', 'csv')
         data = {
-            'apikey': self.api_key,
+            'api_key': self.api_key,
             'job_type': 'push_to_datastore',
             'metadata': {
                 'ckan_url': 'http://%s/' % self.host,
