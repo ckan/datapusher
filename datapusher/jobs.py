@@ -6,7 +6,6 @@ import requests
 import urlparse
 import itertools
 import datetime
-import logging
 import locale
 import pprint
 
@@ -15,9 +14,6 @@ import ckanserviceprovider.util as util
 import dataconverters.commas
 import dataconverters.xls
 
-logging.basicConfig()
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
@@ -271,6 +267,6 @@ def push_to_datastore(task_id, input, dry_run=False):
         count += len(records)
         send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
 
-    #logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource['id']))
+    util.logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource_id))
 
     update_resource(resource, api_key, ckan_url)
