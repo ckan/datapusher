@@ -81,9 +81,11 @@ class TestImport(unittest.TestCase):
             }
         }
         source_url = 'http://www.source.org/static/file'
+        size = jobs.MAX_CONTENT_LENGTH + 1
         httpretty.register_uri(
             httpretty.GET, source_url,
-            content_length=jobs.MAX_CONTENT_LENGTH + 1,
+            body='a' * size,
+            content_length=size,
             content_type='application/json')
 
         jobs.push_to_datastore(None, data, True)
