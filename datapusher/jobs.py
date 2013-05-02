@@ -8,12 +8,12 @@ import itertools
 import datetime
 import locale
 import pprint
+import logging
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 import dataconverters.commas
 import dataconverters.xls
-
 
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
@@ -208,14 +208,19 @@ def validate_input(input):
 
 
 @job.async
-def push_to_datastore(task_id, input, dry_run=False):
+def push_to_datastore(task_id, input, queue, dry_run=False):
     '''Show link to documentation.
 
     :param dry_run: Only fetch and parse the resource and return the results
                     instead of storing it in the datastore (for testing)
     :type dry_run: boolean
     '''
-    print "Input:", input
+    handler = util.QueuingHandler(queue)
+    logger = logging.getLogger(__name__)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+
+    logger.info(u'Input {0}'.format(input))
     validate_input(input)
 
     data = input['metadata']
@@ -227,7 +232,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     resource = get_resource(resource_id, ckan_url)
 
     # fetch the resource data
-    print "Fetching from:", resource.get('url')
+    logger.info(u'Fetching from: {0}'.format(resource.get('url')))
     try:
         response = urllib2.urlopen(resource.get('url'), timeout=DOWNLOAD_TIMEOUT)
     except urllib2.HTTPError, e:
@@ -257,7 +262,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     fields = metadata['fields']
     headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in fields]
 
-    print 'Headers:', headers
+    logger.info(u'Found headers and types: {headers}'.format(headers=headers))
 
     if dry_run:
         return headers, result
@@ -267,6 +272,6 @@ def push_to_datastore(task_id, input, dry_run=False):
         count += len(records)
         send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
 
-    util.logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource_id))
+    logger.info("There should be {n} entries in {res_id}.".format(n=count, res_id=resource_id))
 
     update_resource(resource, api_key, ckan_url)
