@@ -34,7 +34,9 @@ The Data Pusher is a flask application so you can choose your preferred [way of 
 
 ### Install dependencies
 
-`sudo apt-get install python-dev postgresql libpq-dev python-pip python-virtualenv git-core uWSGI nginx`
+```
+sudo apt-get install python-dev postgresql libpq-dev python-pip python-virtualenv git-core uWSGI nginx
+```
 
 ### Create a virtual environment and install the Data Pusher
 
