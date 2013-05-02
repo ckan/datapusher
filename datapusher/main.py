@@ -10,12 +10,12 @@ assert(jobs.push_to_datastore)
 
 def serve():
     web.configure()
-    web.run()
+    web.app.run(web.app.config.get('HOST'), web.app.config.get('PORT'))
 
 
 def serve_test():
     web.configure()
-    return web.test_client()
+    return web.app.test_client()
 
 
 def main():
@@ -27,10 +27,10 @@ def main():
                 The panel lit up with the words Please do not press this button again."''')
 
     argparser.add_argument('config', metavar='CONFIG', type=file,
-                       help='configuration file')
+                           help='configuration file')
     args = argparser.parse_args()
 
-    os.environ['JOB_CONFIG'] = args.config.name
+    os.environ['JOB_CONFIG'] = os.path.abspath(args.config.name)
     serve()
 
 if __name__ == '__main__':
