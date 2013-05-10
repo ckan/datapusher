@@ -25,6 +25,8 @@ os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
 web.configure()
 app = main.serve_test()
 
+headers = {"content-type": "application/json"}
+
 
 def join_static_path(filename):
     return os.path.join(os.path.dirname(__file__), 'static', filename)
@@ -79,12 +81,12 @@ class TestImport():
         if r.status_code != 200:
                 raise Exception('Error creating datastore for resource. Check the CKAN output.')
 
-        res_id = json.loads(r.content)['result']['resources'][0]['id']
+        res_id = json.loads(r.text)['result']['resources'][0]['id']
         self.resource_ids.append(res_id)
         return res_id
 
     @httpretty.activate
-    def test_simple_csv_directly(self):
+    def test_simple_csv(self):
         url = 'http://www.ckan.org/static/simple.csv'
         httpretty.register_uri(httpretty.GET, url,
                                body=get_static_file('simple.csv'),
@@ -104,9 +106,14 @@ class TestImport():
 
         response = requests.get(
             'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
-            headers={"content-type": "application/json"})
+            headers=headers)
 
-        result = json.loads(response.content)
+        assert_equal(response.status_code, 200)
+        try:
+            result = response.json()
+        except:
+            print "Could not parse", response.text
+            raise
 
         assert not 'error' in result, result['error']
 
@@ -118,3 +125,80 @@ class TestImport():
                       {u'type': u'timestamp', u'id': u'date'},
                       {u'type': u'numeric', u'id': u'temperature'},
                       {u'type': u'text', u'id': u'place'}])
+
+    @httpretty.activate
+    def test_long_csv(self):
+        url = 'http://www.ckan.org/static/long.csv'
+        httpretty.register_uri(httpretty.GET, url,
+                               body=get_static_file('long.csv'),
+                               content_type="application/csv")
+        resource_id = self.make_resource_id(url)
+
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': resource_id
+            }
+        }
+
+        jobs.push_to_datastore(None, data, web.queue)
+
+        response = requests.get(
+            'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
+            headers=headers)
+
+        assert_equal(response.status_code, 200)
+        try:
+            result = response.json()
+        except:
+            print response.text
+            raise
+
+        assert not 'error' in result, result['error']
+        assert result['result']['total'] == 4000, (result['result']['total'], resource_id)
+
+    @httpretty.activate
+    def test_messier_file(self):
+        url = 'http://www.ckan.org/static/messy.csv'
+        httpretty.register_uri(httpretty.GET, url,
+                               body=get_static_file('3ffdcd42-5c63-4089-84dd-c23876259973.csv'),
+                               content_type="application/csv")
+        resource_id = self.make_resource_id(url)
+
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': resource_id
+            }
+        }
+
+        jobs.push_to_datastore(None, data, web.queue)
+
+        response = requests.get(
+            'http://%s/api/action/datastore_search?resource_id=%s' % (self.host, resource_id),
+            headers=headers)
+
+        assert_equal(response.status_code, 200)
+        try:
+            result = response.json()
+        except:
+            print response.text
+            raise
+
+        assert not 'error' in result, result['error']
+        value = result['result']['records'][0][u'Transaction Number']
+        assert_equal(int(value), 136980)
+        assert_equal(result['result']['total'], 564)
+
+        assert_equal(result['result']['fields'],
+                     [{u'type': u'int4', u'id': u'_id'},
+                      {u'type': u'text', u'id': u'Body Name'},
+                      {u'type': u'timestamp', u'id': u'Date'},
+                      {u'type': u'numeric', u'id': u'Transaction Number'},
+                      {u'type': u'numeric', u'id': u'Amount'},
+                      {u'type': u'text', u'id': u'Supplier'},
+                      {u'type': u'text', u'id': u'Expense Area'}])
