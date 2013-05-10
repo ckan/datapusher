@@ -11,6 +11,7 @@ import datetime
 import locale
 import pprint
 import logging
+import decimal
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -60,12 +61,11 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
 
     """
     if not response.status_code:
-        raise util.JobError('{who} bad response. Status code: {code}, At: {url}'.format(
+        raise util.JobError('{who} bad response with no status code at: {url}'.format(
             who=who,
-            url=request_url,
-            resp=response))
+            url=request_url))
 
-    message = '{who} bad response. Status code: {code}, At: {url}, Response: {resp}'
+    message = '{who} bad response. Status code: {code} {reason}. At: {url}. Response: {resp}'
     try:
         if not response.status_code in good_status:
             json_response = response.json()
@@ -73,12 +73,14 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
                 raise util.JobError(message.format(
                                     who=who,
                                     code=response.status_code,
+                                    reason=response.reason,
                                     url=request_url,
                                     resp=pprint.pformat(json_response)))
     except ValueError:
         raise util.JobError(message.format(
                             who=who,
                             code=response.status_code,
+                            reason=response.reason,
                             url=request_url,
                             resp=response.text[:200]))
 
@@ -135,6 +137,8 @@ class DatastoreEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
+        if isinstance(obj, decimal.Decimal):
+            return str(obj)
 
         return json.JSONEncoder.default(self, obj)
 
