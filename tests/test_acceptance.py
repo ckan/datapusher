@@ -153,6 +153,29 @@ class TestImport(unittest.TestCase):
                       u'place': u'Galway', u'temperature': 1})
 
     @httpretty.activate
+    def test_simple_ssv(self):
+        # semicilon separated, just a different separator to guess
+        self.register_urls('simple.csv', 'csv', 'application/csv')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        results = list(results)
+        assert_equal(headers, [{'type': 'timestamp', 'id': u'date'},
+                               {'type': 'numeric', 'id': u'temperature'},
+                               {'type': 'text', 'id': u'place'}])
+        assert_equal(len(results), 6)
+        assert_equal(results[0],
+                     {u'date': datetime.datetime(2011, 1, 1, 0, 0),
+                      u'place': u'Galway', u'temperature': 1})
+
+    @httpretty.activate
     def test_simple_xls(self):
         self.register_urls('simple.xls', 'xls', 'application/vnd.ms-excel')
         data = {
