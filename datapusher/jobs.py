@@ -234,7 +234,6 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
-    logger.info('Input {0}'.format(input))
     validate_input(input)
 
     data = input['metadata']
@@ -276,7 +275,7 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
     fields = metadata['fields']
     headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in fields]
 
-    logger.info('Found headers and types: {headers}'.format(headers=headers))
+    logger.info('Determined headers and types: {headers}'.format(headers=headers))
 
     if dry_run:
         return headers, result
@@ -286,6 +285,6 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
         count += len(records)
         send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
 
-    logger.info('There should be {n} entries in {res_id}.'.format(n=count, res_id=resource_id))
+    logger.info('Successfully pushed {n} entries to {res_id}.'.format(n=count, res_id=resource_id))
 
     update_resource(resource, api_key, ckan_url)
