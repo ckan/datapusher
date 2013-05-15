@@ -229,8 +229,8 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
                     instead of storing it in the datastore (for testing)
     :type dry_run: boolean
     '''
-    handler = util.QueuingHandler(queue)
-    logger = logging.getLogger(__name__)
+    handler = util.QueuingHandler(queue, task_id)
+    logger = logging.Logger(task_id)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
