@@ -2,7 +2,7 @@
 '''
 Test the whole datapusher but do not push to the datastore.
 The difference to the integration tests is that these tests can
-run on travis without a running CKAN and datastore. These testsdo not
+run on travis without a running CKAN and datastore. These tests do not
 mock the datastore but instead set the dry-run variable.
 '''
 
@@ -154,8 +154,8 @@ class TestImport(unittest.TestCase):
 
     @httpretty.activate
     def test_simple_ssv(self):
-        # semicilon separated, just a different separator to guess
-        self.register_urls('simple.csv', 'csv', 'application/csv')
+        # semicolon separated, just a different separator to guess
+        self.register_urls('simple.ssv', 'csv', 'application/csv')
         data = {
             'api_key': self.api_key,
             'job_type': 'push_to_datastore',
@@ -252,3 +252,20 @@ class TestImport(unittest.TestCase):
         assert_equal(len(results), 82)
         assert_equal(headers[1]['id'].strip(), u'1985')
         assert_equal(results[1]['column_1'].strip(), u'Gefäßchirurgie')
+
+    @httpretty.activate
+    def test_long_file(self):
+        self.register_urls('long.csv', 'csv')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        results = list(results)
+        assert_equal(len(headers), 1)
+        assert_equal(len(results), 4000)

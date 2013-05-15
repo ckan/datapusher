@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 '''
-Test the whole datapusher but mock the datastore. The difference to the import tests
-is that these tests can run on travis without a running CKAN and datastore.
+Test the whole datapusher but mock the CKAN datastore.
 '''
 
 import os
@@ -69,7 +69,7 @@ class TestImport(unittest.TestCase):
                                content_type="application/json")
 
     @httpretty.activate
-    def test_simple_csv_basic(self):
+    def test_simple_csv(self):
         self.register_urls()
         data = {
             'api_key': self.api_key,

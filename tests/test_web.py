@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Test whether the service can be started properly and whether the
 configuration and the jobs are loaded.
