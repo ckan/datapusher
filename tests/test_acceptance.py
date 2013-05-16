@@ -254,6 +254,23 @@ class TestImport(unittest.TestCase):
         assert_equal(results[1]['column_1'].strip(), u'Gefäßchirurgie')
 
     @httpretty.activate
+    def test_mostly_numbers(self):
+        self.register_urls('mixedGLB.csv')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        results = list(results)
+        assert_equal(len(headers), 19)
+        assert_equal(len(results), 133)
+
+    @httpretty.activate
     def test_long_file(self):
         self.register_urls('long.csv', 'csv')
         data = {
