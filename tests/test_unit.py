@@ -123,7 +123,7 @@ class TestCkanActionCalls(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, url,
                                body=u'{"success": true}',
                                content_type="application/json")
-        jobs.send_resource_to_datastore('an_id', [], [], 'my_key', 'http://www.ckan.org/')
+        jobs.send_resource_to_datastore({'id': 'an_id'}, [], [], 'my_key', 'http://www.ckan.org/')
 
 
 class TestCheckResponse(unittest.TestCase):

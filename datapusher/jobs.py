@@ -18,6 +18,8 @@ import ckanserviceprovider.util as util
 import dataconverters.commas
 import dataconverters.xls
 
+from slugify import slugify
+
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
@@ -157,13 +159,16 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
         raise util.JobError('Deleting existing datastore failed.')
 
 
-def send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url):
+def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
     """
     Stores records in CKAN datastore
     """
-    request = {'resource_id': resource_id,
+    request = {'resource_id': resource['id'],
                'fields': headers,
                'records': records}
+    name = resource.get('name')
+    if name and slugify(name) != resource['id']:
+        request['aliases'] = slugify(name)
     url = get_url('datastore_create', ckan_url)
     r = requests.post(url,
                       data=json.dumps(request, cls=DatastoreEncoder),
@@ -283,7 +288,7 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
     count = 0
     for records in chunky(result, 100):
         count += len(records)
-        send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
+        send_resource_to_datastore(resource, headers, records, api_key, ckan_url)
 
     logger.info('Successfully pushed {n} entries to {res_id}.'.format(n=count, res_id=resource_id))
 

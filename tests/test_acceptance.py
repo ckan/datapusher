@@ -52,6 +52,8 @@ class TestImport(unittest.TestCase):
                                body=json.dumps({
                                    'success': True,
                                    'result': {
+                                       'id': '32h4345k34h5l345',
+                                       'name': 'short name',
                                        'url': source_url,
                                        'format': format
                                    }
