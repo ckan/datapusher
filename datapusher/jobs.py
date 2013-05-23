@@ -275,6 +275,7 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
     'datastore_create' will append to the existing datastore. And if
     the fields have significantly changed, it may also fail.
     '''
+    logger.info('Deleting "{res_id}" from datastore.'.format(res_id=resource_id))
     delete_datastore_resource(resource_id, api_key, ckan_url)
 
     fields = metadata['fields']
@@ -286,10 +287,11 @@ def push_to_datastore(task_id, input, queue, dry_run=False):
         return headers, result
 
     count = 0
-    for records in chunky(result, 100):
+    for i, records in enumerate(chunky(result, 250)):
         count += len(records)
+        logger.info('Saving chunk {number}'.format(number=i))
         send_resource_to_datastore(resource, headers, records, api_key, ckan_url)
 
-    logger.info('Successfully pushed {n} entries to {res_id}.'.format(n=count, res_id=resource_id))
+    logger.info('Successfully pushed {n} entries to "{res_id}".'.format(n=count, res_id=resource_id))
 
     update_resource(resource, api_key, ckan_url)

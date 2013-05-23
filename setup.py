@@ -18,6 +18,7 @@ setup(name='datapusher',
       zip_safe=False,
       install_requires=['ckanserviceprovider',
                         'dataconverters',
+                        'python-slugify',
                         'Requests'],
       dependency_links=[
           'https://github.com/okfn/ckan-service-provider/tarball/master#egg=ckanserviceprovider',
