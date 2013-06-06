@@ -82,7 +82,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        jobs.push_to_datastore(None, data, web.queue)
+        jobs.push_to_datastore('fake_id', data)
 
     @httpretty.activate
     def test_wrong_api_key(self):
@@ -107,4 +107,4 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        self.assertRaises(util.JobError, jobs.push_to_datastore, None, data, web.queue)
+        self.assertRaises(util.JobError, jobs.push_to_datastore, 'fake_id', data)

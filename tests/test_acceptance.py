@@ -90,7 +90,7 @@ class TestImport(unittest.TestCase):
             content_length=size,
             content_type='application/json')
 
-        jobs.push_to_datastore(None, data, web.queue, True)
+        jobs.push_to_datastore('fake_id', data, True)
 
     @httpretty.activate
     def test_delete_404(self):
@@ -109,7 +109,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
 
     @httpretty.activate
     def test_simple_csv(self):
@@ -123,7 +123,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(headers, [{'type': 'timestamp', 'id': u'date'},
                                {'type': 'numeric', 'id': u'temperature'},
@@ -144,7 +144,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(headers, [{'type': 'timestamp', 'id': u'date'},
                                {'type': 'numeric', 'id': u'temperature'},
@@ -167,7 +167,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(headers, [{'type': 'timestamp', 'id': u'date'},
                                {'type': 'numeric', 'id': u'temperature'},
@@ -189,7 +189,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(headers, [{'type': 'timestamp', 'id': u'date'},
                                {'type': 'numeric', 'id': u'temperature'},
@@ -211,7 +211,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(headers, [{'type': 'text', 'id': u'Directorate'},
                                {'type': 'text', 'id': u'Service Area'},
@@ -248,7 +248,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(len(headers), 11)
         assert_equal(len(results), 82)
@@ -267,7 +267,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(len(headers), 19)
         assert_equal(len(results), 133)
@@ -284,7 +284,7 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        headers, results = jobs.push_to_datastore(None, data, web.queue, True)
+        headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
         assert_equal(len(headers), 1)
         assert_equal(len(results), 4000)

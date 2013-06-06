@@ -227,14 +227,14 @@ def validate_input(input):
 
 
 @job.async
-def push_to_datastore(task_id, input, queue, dry_run=False):
+def push_to_datastore(task_id, input, dry_run=False):
     '''Show link to documentation.
 
     :param dry_run: Only fetch and parse the resource and return the results
                     instead of storing it in the datastore (for testing)
     :type dry_run: boolean
     '''
-    handler = util.QueuingHandler(queue, task_id)
+    handler = util.StoringHandler(task_id, input)
     logger = logging.Logger(task_id)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
