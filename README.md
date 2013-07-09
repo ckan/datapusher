@@ -1,6 +1,7 @@
 # Data Pusher
 
 [![Build Status](https://travis-ci.org/okfn/datapusher.png)](https://travis-ci.org/okfn/datapusher)
+[![Coverage Status](https://coveralls.io/repos/okfn/datapusher/badge.png)](https://coveralls.io/r/okfn/datapusher)
 
 __WORK IN PROGRESS__ - Expect release in mid 2013.
 
