@@ -222,7 +222,7 @@ class TestImport(unittest.TestCase):
                                {'type': 'text', 'id': u'Capital/ Revenue'},
                                {'type': 'text', 'id': u'Cost Centre'},
                                {'type': 'text', 'id': u'Cost Centre Description'},
-                               {'type': 'float', 'id': u'Grand Total'}])
+                               {'type': 'numeric', 'id': u'Grand Total'}])
         assert_equal(len(results), 230)
         assert_equal(results[0],
                      {u'Directorate': u'Adult and Culture',
@@ -253,7 +253,7 @@ class TestImport(unittest.TestCase):
         assert_equal(len(headers), 11)
         assert_equal(len(results), 82)
         assert_equal(headers[1]['id'].strip(), u'1985')
-        assert_equal(results[1]['column_1'].strip(), u'Gefäßchirurgie')
+        assert_equal(results[1]['column_0'].strip(), u'Gefäßchirurgie')
 
     @httpretty.activate
     def test_mostly_numbers(self):

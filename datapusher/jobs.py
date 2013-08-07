@@ -13,12 +13,11 @@ import pprint
 import logging
 import decimal
 
+import messytables
+from slugify import slugify
+
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
-import dataconverters.commas
-import dataconverters.xls
-
-from slugify import slugify
 
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
@@ -31,10 +30,12 @@ TYPE_MAPPING = {
     # 'int' may not be big enough,
     # and type detection may not realize it needs to be big
     'Integer': 'numeric',
-    'Float': 'float',
     'Decimal': 'numeric',
-    'DateTime': 'timestamp'
+    'DateUtil': 'timestamp'
 }
+
+TYPES = [messytables.StringType, messytables.DecimalType,
+         messytables.IntegerType, messytables.DateUtilType]
 
 DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
@@ -85,39 +86,6 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
                             reason=response.reason,
                             url=request_url,
                             resp=response.text[:200]))
-
-
-def get_parser(resource, content_type):
-    """
-    Get tuple of parser and additional arguments that should be passed
-    to the parse call.
-    """
-    excel_types = ['xls', 'application/ms-excel', 'application/xls',
-                   'application/vnd.ms-excel']
-    excel_xml_types = ['xlsx',
-                       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-    tsv_types = ['tsv', 'text/tsv', 'text/tab-separated-values']
-    csv_types = ['csv', 'text/csv', 'text/comma-separated-values']
-    #zipped_types = ['application/zip']
-
-    def is_of_type(types):
-        return content_type in types or resource['format'].lower() in types
-
-    parser = None
-    kwargs = {}
-    if is_of_type(excel_types):
-        parser = dataconverters.xls
-    elif is_of_type(excel_xml_types):
-        parser = dataconverters.xls
-        kwargs = {'excel_type': 'xlsx'}
-    elif is_of_type(csv_types):
-        parser = dataconverters.commas
-    elif is_of_type(tsv_types):
-        parser = dataconverters.commas
-    else:
-        raise util.JobError('No parser for {} or {} found.'.format(
-            content_type, resource['format']))
-    return parser, kwargs
 
 
 def chunky(iterable, n):
@@ -252,12 +220,14 @@ def push_to_datastore(task_id, input, dry_run=False):
     # fetch the resource data
     logger.info('Fetching from: {0}'.format(resource.get('url')))
     try:
-        response = urllib2.urlopen(resource.get('url'), timeout=DOWNLOAD_TIMEOUT)
+        response = urllib2.urlopen(resource.get('url'),
+                                   timeout=DOWNLOAD_TIMEOUT)
     except urllib2.HTTPError, e:
         raise util.JobError('Invalid HTTP response: %s' % e)
     except urllib2.URLError, e:
         if isinstance(e.reason, socket.timeout):
-            raise util.JobError('Connection timed out after %ss' % DOWNLOAD_TIMEOUT)
+            raise util.JobError('Connection timed out after %ss' %
+                                DOWNLOAD_TIMEOUT)
 
     cl = response.info().getheader('content-length')
     if cl and int(cl) > MAX_CONTENT_LENGTH:
@@ -267,31 +237,52 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     ct = response.info().getheader('content-type').split(';', 1)[0]
 
-    parser, kwargs = get_parser(resource, ct)
-    result, metadata = parser.parse(response, strict_type_guess=True, **kwargs)
+    try:
+        table_set = messytables.any_tableset(response, mimetype=ct)
+    except messytables.ReadError, e:
+        raise util.JobError(e)
+
+    row_set = table_set.tables.pop()
+    offset, headers = messytables.headers_guess(row_set.sample)
+    row_set.register_processor(messytables.headers_processor(headers))
+    row_set.register_processor(messytables.offset_processor(offset + 1))
+    types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
+    row_set.register_processor(messytables.types_processor(types))
+
+    def row_iterator():
+        for row in row_set:
+            data_row = {}
+            for index, cell in enumerate(row):
+                data_row[cell.column] = cell.value
+            yield data_row
+    result = row_iterator()
 
     '''
     Delete existing datstore resource before proceeding. Otherwise
     'datastore_create' will append to the existing datastore. And if
     the fields have significantly changed, it may also fail.
     '''
-    logger.info('Deleting "{res_id}" from datastore.'.format(res_id=resource_id))
+    logger.info('Deleting "{res_id}" from datastore.'.format(
+        res_id=resource_id))
     delete_datastore_resource(resource_id, api_key, ckan_url)
 
-    fields = metadata['fields']
-    headers = [dict(id=field['id'], type=TYPE_MAPPING.get(field['type'])) for field in fields]
+    headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
+                     for field in zip(headers, types)]
 
-    logger.info('Determined headers and types: {headers}'.format(headers=headers))
+    logger.info('Determined headers and types: {headers}'.format(
+        headers=headers_dicts))
 
     if dry_run:
-        return headers, result
+        return headers_dicts, result
 
     count = 0
     for i, records in enumerate(chunky(result, 250)):
         count += len(records)
         logger.info('Saving chunk {number}'.format(number=i))
-        send_resource_to_datastore(resource, headers, records, api_key, ckan_url)
+        send_resource_to_datastore(resource, headers_dicts,
+                                   records, api_key, ckan_url)
 
-    logger.info('Successfully pushed {n} entries to "{res_id}".'.format(n=count, res_id=resource_id))
+    logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
+        n=count, res_id=resource_id))
 
     update_resource(resource, api_key, ckan_url)

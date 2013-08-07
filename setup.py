@@ -17,7 +17,7 @@ setup(name='datapusher',
       include_package_data=True,
       zip_safe=False,
       install_requires=['ckanserviceprovider',
-                        'dataconverters',
+                        'messytables==0.12.0',
                         'python-slugify',
                         'Requests'],
       dependency_links=[
