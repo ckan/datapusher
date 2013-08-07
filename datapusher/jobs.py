@@ -12,6 +12,7 @@ import locale
 import pprint
 import logging
 import decimal
+import cStringIO
 
 import messytables
 from slugify import slugify
@@ -237,8 +238,10 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     ct = response.info().getheader('content-type').split(';', 1)[0]
 
+    f = cStringIO.StringIO(response.read())
+
     try:
-        table_set = messytables.any_tableset(response, mimetype=ct)
+        table_set = messytables.any_tableset(f, mimetype=ct)
     except messytables.ReadError, e:
         raise util.JobError(e)
 
