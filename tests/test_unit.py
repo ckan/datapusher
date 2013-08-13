@@ -100,6 +100,7 @@ class TestCkanActionCalls(unittest.TestCase):
                                content_type="application/json")
         resource = jobs.get_resource('an_id', 'http://www.ckan.org/')
         assert_equal(resource, {'foo': 42})
+        assert json.loads(httpretty.last_request().body)['id'] == 'an_id'
 
     @httpretty.activate
     def test_delete_datastore(self):
@@ -108,6 +109,7 @@ class TestCkanActionCalls(unittest.TestCase):
                                body=u'{"success": true}',
                                content_type="application/json")
         jobs.delete_datastore_resource('an_id', 'my_key', 'http://www.ckan.org/')
+        assert json.loads(httpretty.last_request().body)['id'] == 'an_id'
 
     @httpretty.activate
     def test_resource_update(self):
@@ -115,7 +117,11 @@ class TestCkanActionCalls(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, url,
                                body=u'{"success": true}',
                                content_type="application/json")
+        jobs.update_resource({'foo': 42}, 'my_key', 'http://www.ckan.org/', True)
+        assert json.loads(httpretty.last_request().body)['url_type'] == 'datapusher'
+
         jobs.update_resource({'foo': 42}, 'my_key', 'http://www.ckan.org/')
+        assert not json.loads(httpretty.last_request().body).get('url_type')
 
     @httpretty.activate
     def test_send_resource_to_datastore(self):

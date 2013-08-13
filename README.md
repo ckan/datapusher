@@ -20,12 +20,13 @@ Post the following data to `/job`
     "result_url": "https://www.ckan.org/api/action/datapusher_hook",
     "metadata": {
         "ckan_url": "http://www.ckan.org/",
-        "resource_id": "3b2987d2-e0e8-413c-92f0-7f9bfe148adc"
+        "resource_id": "3b2987d2-e0e8-413c-92f0-7f9bfe148adc",
+        "set_url_type": False
     }
 }
 ```
 
-Note that the result_url is optional but it's the best way to get notifies when the (asynchronous) job has finished.
+Note that the `result_url` is optional but it's the best way to get notifies when the (asynchronous) job has finished. `set_url_type` should be set to `True`, if you want the datapusher to change the `url_type` to `datapusher` after the job finished successfully.
 
 Read more about the API at http://ckan-service-provider.readthedocs.org/en/latest/
 

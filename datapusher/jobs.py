@@ -118,7 +118,7 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
     try:
         delete_url = get_url('datastore_delete', ckan_url)
         response = requests.post(delete_url,
-                                 data=json.dumps({'resource_id': resource_id}),
+                                 data=json.dumps({'id': resource_id}),
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
@@ -147,7 +147,7 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
     check_response(r, url, 'CKAN DataStore')
 
 
-def update_resource(resource, api_key, ckan_url):
+def update_resource(resource, api_key, ckan_url, set_url_type=False):
     """
     Update webstore_url and webstore_last_updated in CKAN
     """
@@ -156,6 +156,9 @@ def update_resource(resource, api_key, ckan_url):
         'webstore_url': 'active',
         'webstore_last_updated': datetime.datetime.now().isoformat()
     })
+
+    if set_url_type:
+        resource['url_type'] = 'datapusher'
 
     url = get_url('resource_update', ckan_url)
     r = requests.post(
@@ -288,4 +291,5 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
         n=count, res_id=resource_id))
 
-    update_resource(resource, api_key, ckan_url)
+    update_resource(resource, api_key, ckan_url,
+                    set_url_type=data.get('set_url_type', False))
