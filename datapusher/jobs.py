@@ -226,12 +226,13 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         response = urllib2.urlopen(resource.get('url'),
                                    timeout=DOWNLOAD_TIMEOUT)
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         raise util.JobError('Invalid HTTP response: %s' % e)
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         if isinstance(e.reason, socket.timeout):
             raise util.JobError('Connection timed out after %ss' %
                                 DOWNLOAD_TIMEOUT)
+        raise
 
     cl = response.info().getheader('content-length')
     if cl and int(cl) > MAX_CONTENT_LENGTH:
@@ -245,7 +246,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     try:
         table_set = messytables.any_tableset(f, mimetype=ct)
-    except messytables.ReadError, e:
+    except messytables.ReadError as e:
         raise util.JobError(e)
 
     row_set = table_set.tables.pop()
