@@ -69,6 +69,7 @@ class TestImport(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, datastore_del_url,
                                body=json.dumps({'success': True}),
                                content_type='application/json')
+        return source_url, res_url
 
     @httpretty.activate
     @raises(util.JobError)
@@ -288,3 +289,32 @@ class TestImport(unittest.TestCase):
         results = list(results)
         assert_equal(len(headers), 1)
         assert_equal(len(results), 4000)
+
+    @httpretty.activate
+    def test_do_not_push_when_same_hash(self):
+        source_url, res_url = self.register_urls()
+        httpretty.register_uri(httpretty.POST, res_url,
+                               body=json.dumps({
+                                   'success': True,
+                                   'result': {
+                                       'id': '32h4345k34h5l345',
+                                       'name': 'short name',
+                                       'url': source_url,
+                                       'format': 'csv',
+                                       'hash': '0ccb75d277ec2da41faae58642e3fb11'
+                                   }
+                               }),
+                               content_type='application/json')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        res = jobs.push_to_datastore('fake_id', data, True)
+        # res should be None because we didn't get to the part that
+        # returns something
+        assert not res, res

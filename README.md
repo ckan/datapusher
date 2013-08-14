@@ -21,7 +21,8 @@ Post the following data to `/job`
     "metadata": {
         "ckan_url": "http://www.ckan.org/",
         "resource_id": "3b2987d2-e0e8-413c-92f0-7f9bfe148adc",
-        "set_url_type": False
+        "set_url_type": false,
+        "ignore_hash": false  // set to true, if you want the data to be imported regardless of changes
     }
 }
 ```

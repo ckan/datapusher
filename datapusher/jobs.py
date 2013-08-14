@@ -12,6 +12,7 @@ import locale
 import pprint
 import logging
 import decimal
+import hashlib
 import cStringIO
 
 import messytables
@@ -243,6 +244,16 @@ def push_to_datastore(task_id, input, dry_run=False):
     ct = response.info().getheader('content-type').split(';', 1)[0]
 
     f = cStringIO.StringIO(response.read())
+    file_hash = hashlib.md5(f.read()).hexdigest()
+    f.seek(0)
+
+    if (resource.get('hash') == file_hash
+            and not data.get('ignore_hash')):
+        logger.info("The file hash hasn't changed: {hash}.".format(
+            hash=file_hash))
+        return
+
+    resource['hash'] = file_hash
 
     try:
         table_set = messytables.any_tableset(f, mimetype=ct)
