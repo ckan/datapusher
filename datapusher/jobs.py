@@ -14,6 +14,7 @@ import logging
 import decimal
 import hashlib
 import cStringIO
+import time
 
 import messytables
 from slugify import slugify
@@ -119,7 +120,8 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
     try:
         delete_url = get_url('datastore_delete', ckan_url)
         response = requests.post(delete_url,
-                                 data=json.dumps({'id': resource_id}),
+                                 data=json.dumps({'id': resource_id,
+                                                  'force': True}),
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
@@ -135,7 +137,9 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
     """
     request = {'resource_id': resource['id'],
                'fields': headers,
+               'force': True,
                'records': records}
+
     name = resource.get('name')
     if name and slugify(name) != resource['id']:
         request['aliases'] = slugify(name)
@@ -171,14 +175,16 @@ def update_resource(resource, api_key, ckan_url, set_url_type=False):
     check_response(r, url, 'CKAN')
 
 
-def get_resource(resource_id, ckan_url):
+def get_resource(resource_id, ckan_url, api_key):
     """
     Gets available information about the resource from CKAN
     """
     url = get_url('resource_show', ckan_url)
     r = requests.post(url,
                       data=json.dumps({'id': resource_id}),
-                      headers={'Content-type': 'application/json'})
+                      headers={'Content-Type': 'application/json',
+                               'Authorization': api_key}
+                      )
     check_response(r, url, 'CKAN')
 
     return r.json()['result']
@@ -220,7 +226,12 @@ def push_to_datastore(task_id, input, dry_run=False):
     resource_id = data['resource_id']
     api_key = input.get('api_key')
 
-    resource = get_resource(resource_id, ckan_url)
+    try:
+        resource = get_resource(resource_id, ckan_url, api_key)
+    except util.JobError, e:
+        #try again in 5 seconds just incase CKAN is slow at adding resource
+        time.sleep(5)
+        resource = get_resource(resource_id, ckan_url, api_key)
 
     # fetch the resource data
     logger.info('Fetching from: {0}'.format(resource.get('url')))
@@ -256,9 +267,15 @@ def push_to_datastore(task_id, input, dry_run=False):
     resource['hash'] = file_hash
 
     try:
-        table_set = messytables.any_tableset(f, mimetype=ct)
+        table_set = messytables.any_tableset(f, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
-        raise util.JobError(e)
+        ## try again with format
+        f.seek(0)
+        try:
+            format = resource.get('format')
+            table_set = messytables.any_tableset(f, mimetype=format, extension=format)
+        except:
+            raise util.JobError(e)
 
     row_set = table_set.tables.pop()
     offset, headers = messytables.headers_guess(row_set.sample)
