@@ -76,7 +76,7 @@ python datapusher/main.py {PATH TO SETTINGS FILE}
 
 ### Edit the web server configuration and restart the server
 
-Make sure that you have you nginx configured to serve uWSGI. You can find instructions for that at http://flask.pocoo.org/docs/deploying/uWSGI/.
+Make sure that you have you nginx configured to serve uWSGI. You can find instructions for that at http://flask.pocoo.org/docs/deploying/uwsgi/.
 
 You will also need to configure uWSGI. To avoid problems with handles to the database, make sure to add `lazy = true` to your uWSGI config.
 
