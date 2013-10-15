@@ -180,11 +180,11 @@ def get_resource(resource_id, ckan_url, api_key):
     Gets available information about the resource from CKAN
     """
     url = get_url('resource_show', ckan_url)
-    r = requests.post(url,
-                      data=json.dumps({'id': resource_id}),
-                      headers={'Content-Type': 'application/json',
-                               'Authorization': api_key}
-                      )
+    r = requests.get(url,
+                     data=json.dumps({'id': resource_id}),
+                     headers={'Content-Type': 'application/json',
+                              'Authorization': api_key}
+                     )
     check_response(r, url, 'CKAN')
 
     return r.json()['result']
