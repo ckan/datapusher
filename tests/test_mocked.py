@@ -43,7 +43,7 @@ class TestImport(unittest.TestCase):
                                content_type="application/csv")
 
         res_url = 'http://www.ckan.org/api/3/action/resource_show'
-        httpretty.register_uri(httpretty.GET, res_url,
+        httpretty.register_uri(httpretty.POST, res_url,
                                body=json.dumps({
                                    'success': True,
                                    'result': {

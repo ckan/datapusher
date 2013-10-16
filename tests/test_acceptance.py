@@ -48,7 +48,7 @@ class TestImport(unittest.TestCase):
                                content_type=content_type)
 
         res_url = 'http://www.ckan.org/api/3/action/resource_show'
-        httpretty.register_uri(httpretty.GET, res_url,
+        httpretty.register_uri(httpretty.POST, res_url,
                                body=json.dumps({
                                    'success': True,
                                    'result': {
@@ -293,7 +293,7 @@ class TestImport(unittest.TestCase):
     @httpretty.activate
     def test_do_not_push_when_same_hash(self):
         source_url, res_url = self.register_urls()
-        httpretty.register_uri(httpretty.GET, res_url,
+        httpretty.register_uri(httpretty.POST, res_url,
                                body=json.dumps({
                                    'success': True,
                                    'result': {
