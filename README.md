@@ -63,7 +63,7 @@ pip install psycopg2
 
 ```bash
 cp settings_local.py.tmpl settings_production.py
-vim settings_local.py
+vim settings_production.py
 ```
 
 ### Test the configuration
