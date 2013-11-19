@@ -13,7 +13,7 @@ The following is way the ckan package will install it so it is recommended (espe
 
 This assumes you already have CKAN installed on this server in the way the docs mention or via a package install.
 
-### Download and install
+### Download and Install
 ```bash
 #go to the ckan source directory
 cd /usr/lib/ckan/default/src
@@ -26,7 +26,7 @@ cd datapusher
 sudo /usr/lib/ckan/default/bin/python setup.py develop
 
 #copy the standard apache config file
-sudo cp deployment/datapusher /etc/apache2/sites-availiable/
+sudo cp deployment/datapusher /etc/apache2/sites-available/
 
 #copy the standard datapusher wsgi file
 sudo cp deployment/datapusher.wsgi /etc/ckan/
@@ -34,12 +34,12 @@ sudo cp deployment/datapusher.wsgi /etc/ckan/
 #copy the standard datapusher settings.
 sudo cp deployment/datapusher_settings /etc/ckan/
 
-#open up port 8800 on apache where the datapusher will live
-sudo echo 'NameVirtualHost *:8800' >> /etc/apache2/ports.conf
-sudo echo 'Listen 8800' >> /etc/apache2/ports.conf
+#open up port 8800 on apache where the datapusher accepts connections.
+sudo sh -c 'echo "NameVirtualHost *:8800" >> /etc/apache2/ports.conf'
+sudo sh -c 'echo "Listen 8800" >> /etc/apache2/ports.conf'
 
 #enable datapusher apache
-a2ensite datapusher
+sudo a2ensite datapusher
 ```
 
 ### Instructions for CKAN 2.1 users
@@ -50,7 +50,7 @@ cd /usr/lib/ckan/default/src
 #clone the datapusher CKAN extension
 sudo git clone https://github.com/okfn/ckanext-datapusherext.git
 #install datapusherext
-cd ckanext-datapusher
+cd ckanext-datapusherext
 sudo /usr/lib/ckan/default/bin/python setup.py develop
 ```
 
@@ -76,7 +76,7 @@ The result should look something like
 }
 ```
 
-### Test the configuration
+### Error and logs.
 
 If there are issues you should look in ``` /var/log/apache2/datapusher.error.log ```
 
