@@ -1,98 +1,83 @@
 # Data Pusher
 
 [![Build Status](https://travis-ci.org/okfn/datapusher.png)](https://travis-ci.org/okfn/datapusher)
-[![Coverage Status](https://coveralls.io/repos/okfn/datapusher/badge.png)](https://coveralls.io/r/okfn/datapusher)
-
-__WORK IN PROGRESS__ - Expect release in mid 2013.
 
 A service that extracts data from files that contain tabular data (like CSV or Excel) and writes it to the CKAN DataStore. You only have to provide a URL to the resource, an API key and the URL to your CKAN instance. The Data Pusher will then asynchronously fetch the file, parse it, create a DataStore resource and put the data in the DataStore.
 
 The Data Pusher is built on the [CKAN Service Provider](https://github.com/okfn/ckan-service-provider) and [Messytables](https://github.com/okfn/messytables).
 
-## API
-
-Post the following data to `/job`
-
-```json
-{
-    "api_key": "my-secret-key",
-    "job_type": "push_to_datastore",
-    "result_url": "https://www.ckan.org/api/action/datapusher_hook",
-    "metadata": {
-        "ckan_url": "http://www.ckan.org/",
-        "resource_id": "3b2987d2-e0e8-413c-92f0-7f9bfe148adc",
-        "set_url_type": false,
-        "ignore_hash": false  // set to true, if you want the data to be imported regardless of changes
-    }
-}
-```
-
-Note that the `result_url` is optional but it's the best way to get notifies when the (asynchronous) job has finished. `set_url_type` should be set to `True`, if you want the datapusher to change the `url_type` to `datapusher` after the job finished successfully.
-
-Read more about the API at http://ckan-service-provider.readthedocs.org/en/latest/
-
 ## Deployment
 
-The Data Pusher is a flask application so you can choose your preferred [way of deployment](http://flask.pocoo.org/docs/deploying/). The following is just an example and not the only possible way to deploy the Data Pusher. Also note that some steps will vary on your system. Don't just copy and paste the commands!
+The Data Pusher is a flask application so you can choose your preferred [way of deployment](http://flask.pocoo.org/docs/deploying/). 
+The following is way the ckan package will install it so it is recommended (especially if on ubuntu or debian) that you install it in this way. Other distros should follow a very similar pattern.
 
-### Install dependencies
+This assumes you already have CKAN installed on this server in the way the docs mention or via a package install.
 
-```
-sudo apt-get install python-dev postgresql libpq-dev python-pip python-virtualenv git-core uWSGI nginx
-```
-
-### Create a virtual environment and install the Data Pusher
-
+### Download and install
 ```bash
-virtualenv venv
-source venv/bin/activate
-git clone git://github.com/okfn/datapusher.git
+#go to the ckan source directory
+cd /usr/lib/ckan/default/src
+
+#clone the source
+sudo git clone https://github.com/okfn/datapusher.git
+
+#install the datapussher
 cd datapusher
-python setup.py develop
+sudo /usr/lib/ckan/default/bin/python setup.py develop
+
+#copy the standard apache config file
+sudo cp datapusher/deployment/datapusher /etc/apache2/sites-availiable/
+
+#copy the standard datapusher wsgi file
+sudo cp datapusher/deployment/datapusher.wsgi /etc/ckan/
+
+#copy the standard datapusher settings.
+sudo cp datapusher/deployment/datapusher_settings /etc/ckan/
+
+#open up port 8800 on apache where the datapusher will live
+sudo echo 'NameVirtualHost *:8800' >> /etc/apache2/ports.conf
+sudo echo 'Listen 8800' >> /etc/apache2/ports.conf
+
+#enable datapusher apache
+a2ensite datapusher
 ```
 
-### Install postgres and create a database
-
-Install `psycopg2` because it is not a default package
-
+### Instructions for CKAN 2.1 users
+Follow these instruction for CKAN 2.1 only
 ```bash
-pip install psycopg2
+#go to the ckan source directory
+cd /usr/lib/ckan/default/src
+#clone the datapusher CKAN extension
+sudo git clone https://github.com/okfn/ckanext-datapusherext.git
+#install datapusherext
+cd ckanext-datapusher
+sudo /usr/lib/ckan/default/bin/python setup.py develop
 ```
 
-### Duplicate and edit the Data Pusher configuration
+Add ``` datapusherext  ``` to the plugins line in /etc/ckan/default/production.ini
+Restart apache.  ``` sudo service apache2 restart ```
 
-```bash
-cp settings_local.py.tmpl settings_production.py
-vim settings_production.py
+### Instructions for CKAN 2.2 users
+
+Add ``` datapusher ``` to the plugins line in /etc/ckan/default/production.ini
+Restart apache.  ``` sudo service apache2 restart ```
+
+
+### Test the configuration
+
+To test if it is datapusher service is working or not run
+
+```curl 0.0.0.0:8800```
+
+The result should look something like
+```
+{
+  "help": "\n        Get help at:\n        http://ckan-service-provider.readthedocs.org/."
+}
 ```
 
 ### Test the configuration
 
-At this point, you can start the Data Pusher temporarily and see whether you get any errors.
+If there are issues you should look in ``` /var/log/apache2/datapusher.error.log ```
 
-```bash
-python datapusher/main.py {PATH TO SETTINGS FILE}
-```
 
-### Edit the web server configuration and restart the server
-
-Make sure that you have you nginx configured to serve uWSGI. You can find instructions for that at http://flask.pocoo.org/docs/deploying/uwsgi/.
-
-You will also need to configure uWSGI. To avoid problems with handles to the database, make sure to add `lazy = true` to your uWSGI config.
-
-Finally, restart uWSGI and nginx.
-
-```bash
-sudo service uWSGI restart pusher
-sudo service nginx restart
-```
-
-### You're done!
-
-Head over to `{SERVER URL}/status` to see whether the service is running correctly.
-
-## Developers
-
-You will need a running CKAN instance with a working DataStore to use the importer service. Make sure that you add the API key to the `tests/settings_test.py`. Use `nosetests` to run the tests.
-
-The Data Pusher is built on the CKAN Service which makes functions available as jobs. The only job that the Data Pusher has, is `push_to_datastore`.
