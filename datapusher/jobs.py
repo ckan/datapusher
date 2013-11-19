@@ -214,7 +214,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     :type dry_run: boolean
     '''
     handler = util.StoringHandler(task_id, input)
-    logger = logging.Logger(task_id)
+    logger = logging.getLogger(task_id)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 

@@ -98,7 +98,7 @@ class TestCkanActionCalls(unittest.TestCase):
                                        'foo': 42
                                    }}),
                                content_type="application/json")
-        resource = jobs.get_resource('an_id', 'http://www.ckan.org/')
+        resource = jobs.get_resource('an_id', 'http://www.ckan.org/', None)
         assert_equal(resource, {'foo': 42})
         assert json.loads(httpretty.last_request().body)['id'] == 'an_id'
 
