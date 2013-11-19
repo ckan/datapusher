@@ -2,16 +2,16 @@
 
 [![Build Status](https://travis-ci.org/okfn/datapusher.png)](https://travis-ci.org/okfn/datapusher)
 
-A service that extracts data from files that contain tabular data (like CSV or Excel) and writes it to the CKAN DataStore. You only have to provide a URL to the resource, an API key and the URL to your CKAN instance. The Data Pusher will then asynchronously fetch the file, parse it, create a DataStore resource and put the data in the DataStore.
+A service that extracts data from files that contain tabular data (like CSV or Excel) and writes it to the CKAN DataStore. You only have to provide a URL to the resource, an API key and the URL to your CKAN instance. The Data Pusher will then asynchronously fetch the file, parse it, create a DataStore resource and put the data in the DataStore.  This service is intended to replace the DataStorer.
 
 The Data Pusher is built on the [CKAN Service Provider](https://github.com/okfn/ckan-service-provider) and [Messytables](https://github.com/okfn/messytables).
 
 ## Deployment
 
 The Data Pusher is a flask application so you can choose your preferred [way of deployment](http://flask.pocoo.org/docs/deploying/). 
-The following is way the ckan package will install it so it is recommended (especially if on ubuntu or debian) that you install it in this way. Other distros should follow a very similar pattern.
+The following instructions are nonetheless the way the ckan package will install it in future versions.  So this method is recommended (especially if on ubuntu or debian). Other distros should follow a very similar pattern.
 
-This assumes you already have CKAN installed on this server in the way the docs mention or via a package install.
+This assumes you already have CKAN installed on this server in the same location as the docs mention or via a package install.  If this is correct you should be able to run the following as is.
 
 ### Download and Install
 ```bash
