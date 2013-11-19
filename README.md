@@ -26,13 +26,13 @@ cd datapusher
 sudo /usr/lib/ckan/default/bin/python setup.py develop
 
 #copy the standard apache config file
-sudo cp datapusher/deployment/datapusher /etc/apache2/sites-availiable/
+sudo cp deployment/datapusher /etc/apache2/sites-availiable/
 
 #copy the standard datapusher wsgi file
-sudo cp datapusher/deployment/datapusher.wsgi /etc/ckan/
+sudo cp deployment/datapusher.wsgi /etc/ckan/
 
 #copy the standard datapusher settings.
-sudo cp datapusher/deployment/datapusher_settings /etc/ckan/
+sudo cp deployment/datapusher_settings /etc/ckan/
 
 #open up port 8800 on apache where the datapusher will live
 sudo echo 'NameVirtualHost *:8800' >> /etc/apache2/ports.conf
