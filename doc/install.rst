@@ -5,7 +5,7 @@ Installation and Setup
 Download and Install (All Version)
 ----------------------------------
 
-This assumes you already have CKAN installed on this server in the same location as the docs mention or via a package install.  If this is correct you should be able to run the following as is.::
+This assumes you already have CKAN installed on this server in the same location as the docs mention or via a package install.  If this is correct you should be able to run the following as is::
 
     #go to the ckan source directory
     cd /usr/lib/ckan/default/src
@@ -37,6 +37,7 @@ Instructions for CKAN 2.1 users
 -------------------------------
 
 These commands should also be run if using CKAN 2.1::
+
     #go to the ckan source directory
     cd /usr/lib/ckan/default/src
     #clone the datapusher CKAN extension
@@ -49,13 +50,17 @@ These commands should also be run if using CKAN 2.1::
 Add ``datapusherext`` to the plugins line in ``/etc/ckan/default/production.ini``
 
 Restart apache::  
+
    sudo service apache2 restart
 
 Instructions for CKAN 2.2 users
 -------------------------------
 
 Add ``datapusher`` to the plugins line in /etc/ckan/default/production.ini
-Restart apache.  ``sudo service apache2 restart``
+
+Restart apache::  
+
+   sudo service apache2 restart
 
 
 Test the configuration
@@ -64,7 +69,7 @@ Test the configuration
 
 To test if it is datapusher service is working or not run::
 
-    ``curl 0.0.0.0:8800``
+    curl 0.0.0.0:8800
 
 The result should look something like::
 
