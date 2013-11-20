@@ -36,7 +36,7 @@ This assumes you already have CKAN installed on this server in the same location
 Instructions for CKAN 2.1 users
 -------------------------------
 
-::
+These commands should also be run if using CKAN 2.1::
     #go to the ckan source directory
     cd /usr/lib/ckan/default/src
     #clone the datapusher CKAN extension
@@ -46,8 +46,10 @@ Instructions for CKAN 2.1 users
     sudo /usr/lib/ckan/default/bin/python setup.py develop
 
 
-Add ``datapusherext`` to the plugins line in /etc/ckan/default/production.ini
-Restart apache.  ``sudo service apache2 restart``
+Add ``datapusherext`` to the plugins line in ``/etc/ckan/default/production.ini``
+
+Restart apache::  
+   sudo service apache2 restart
 
 Instructions for CKAN 2.2 users
 -------------------------------
@@ -60,19 +62,20 @@ Test the configuration
 ----------------------
 Test the configuration
 
-To test if it is datapusher service is working or not run
+To test if it is datapusher service is working or not run::
 
-```curl 0.0.0.0:8800```
+    ``curl 0.0.0.0:8800``
 
 The result should look something like::
-  {
-  "help": "\n        Get help at:\n        http://ckan-service-provider.readthedocs.org/."
-  }
+
+   {
+   "help": "\n        Get help at:\n        http://ckan-service-provider.readthedocs.org/."
+   }
 
 Error and logs
 --------------
 
-If there are issues you should look in `` /var/log/apache2/datapusher.error.log ``
+If there are issues you should look in ``/var/log/apache2/datapusher.error.log``
 
 
 
