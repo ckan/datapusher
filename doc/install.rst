@@ -56,7 +56,7 @@ Restart apache::
 Instructions for CKAN 2.2 users
 -------------------------------
 
-Add ``datapusher`` to the plugins line in /etc/ckan/default/production.ini
+Add ``datapusher`` to the plugins line in ``/etc/ckan/default/production.ini``
 
 Restart apache::  
 
