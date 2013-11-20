@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# ckanext-spatial documentation build configuration file, created by
+# datapusher documentation build configuration file, created by
 # sphinx-quickstart on Wed Apr 10 17:17:12 2013.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'ckanext-spatial'
+project = u'datapusher'
 copyright = u'2013, Open Knowledge Foundation'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -181,7 +181,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ckanext-spatialdoc'
+htmlhelp_basename = 'datapusher'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -200,7 +200,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'ckanext-spatial.tex', u'ckanext-spatial Documentation',
+  ('index', 'datapusher.tex', u'datapusher Documentation',
    u'Open Knowledge Foundation', 'manual'),
 ]
 
@@ -230,7 +230,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'ckanext-spatial', u'ckanext-spatial Documentation',
+    ('index', 'datapusher', u'datapusher Documentation',
      [u'Open Knowledge Foundation'], 1)
 ]
 
@@ -244,8 +244,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'ckanext-spatial', u'ckanext-spatial Documentation',
-   u'Open Knowledge Foundation', 'ckanext-spatial', 'One line description of project.',
+  ('index', 'datapusher', u'datapusher Documentation',
+   u'Open Knowledge Foundation', 'datapusher', 'One line description of project.',
    'Miscellaneous'),
 ]
 
