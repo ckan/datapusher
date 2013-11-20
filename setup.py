@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.1'
+version = '1.0'
 
 setup(name='datapusher',
       version=version,
