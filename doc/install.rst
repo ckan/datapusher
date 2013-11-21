@@ -65,7 +65,6 @@ Restart apache::
 
 Test the configuration
 ----------------------
-Test the configuration
 
 To test if it is datapusher service is working or not run::
 
@@ -80,7 +79,7 @@ The result should look something like::
 Error and logs
 --------------
 
-If there are issues you should look in ``/var/log/apache2/datapusher.error.log``
+If there are issues you should look in ``/var/log/apache2/datapusher.error.log``.  All log output will be put in there.
 
 
 

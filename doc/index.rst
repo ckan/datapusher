@@ -10,7 +10,7 @@ Head to the `CKAN documentation`_ for information on how to set up CKAN.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    install
    usage
