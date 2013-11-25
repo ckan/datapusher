@@ -7,6 +7,9 @@ Download and Install (All Version)
 
 This assumes you already have CKAN installed on this server in the same location as the docs mention or via a package install.  If this is correct you should be able to run the following as is::
 
+    #install requirements for the datapusher
+    apt-get install python-dev build-essential libxslt1-dev libxml2-dev
+
     #go to the ckan source directory
     cd /usr/lib/ckan/default/src
 
@@ -27,6 +30,8 @@ This assumes you already have CKAN installed on this server in the same location
     sudo cp deployment/datapusher_settings /etc/ckan/
 
     #open up port 8800 on apache where the datapusher accepts connections.
+    #make sure you only run these 2 functin once otherwise you will need
+    #to manually endig /etc/apache2/ports.conf manually.
     sudo sh -c 'echo "NameVirtualHost *:8800" >> /etc/apache2/ports.conf'
     sudo sh -c 'echo "Listen 8800" >> /etc/apache2/ports.conf'
 
@@ -64,7 +69,7 @@ Add ``datapusher`` to the plugins line in ``/etc/ckan/default/production.ini``
 
 Restart apache::  
 
-   sudo service apache2 restart
+    sudo service apache2 restart
 
 
 Test the configuration
@@ -76,9 +81,9 @@ To test if it is datapusher service is working or not run::
 
 The result should look something like::
 
-   {
-   "help": "\n        Get help at:\n        http://ckan-service-provider.readthedocs.org/."
-   }
+    {
+    "help": "\n        Get help at:\n        http://ckan-service-provider.readthedocs.org/."
+    }
 
 Error and logs
 --------------
