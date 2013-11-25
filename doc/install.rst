@@ -33,6 +33,10 @@ This assumes you already have CKAN installed on this server in the same location
     #enable datapusher apache
     sudo a2ensite datapusher
 
+These instructions setup the datapusher webservice.  In order to tell CKAN where this webservice is the following must be added to the [app:main] section of your CKAN configuration file located at ``/etc/ckan/default/production.ini``::
+
+    ckan.datapusher.url = http://0.0.0.0:8800/
+
 Instructions for CKAN 2.1 users
 -------------------------------
 
