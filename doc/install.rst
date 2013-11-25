@@ -30,8 +30,8 @@ This assumes you already have CKAN installed on this server in the same location
     sudo cp deployment/datapusher_settings /etc/ckan/
 
     #open up port 8800 on apache where the datapusher accepts connections.
-    #make sure you only run these 2 functin once otherwise you will need
-    #to manually endig /etc/apache2/ports.conf manually.
+    #make sure you only run these 2 functions once otherwise you will need
+    #to manually edit /etc/apache2/ports.conf manually.
     sudo sh -c 'echo "NameVirtualHost *:8800" >> /etc/apache2/ports.conf'
     sudo sh -c 'echo "Listen 8800" >> /etc/apache2/ports.conf'
 
