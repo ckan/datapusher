@@ -141,8 +141,6 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
                'records': records}
 
     name = resource.get('name')
-    if name and slugify(name) != resource['id']:
-        request['aliases'] = slugify(name)
     url = get_url('datastore_create', ckan_url)
     r = requests.post(url,
                       data=json.dumps(request, cls=DatastoreEncoder),
