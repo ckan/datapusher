@@ -27,7 +27,7 @@ This assumes you already have CKAN installed on this server in the same location
     sudo cp deployment/datapusher.wsgi /etc/ckan/
 
     #copy the standard datapusher settings.
-    sudo cp deployment/datapusher_settings /etc/ckan/
+    sudo cp deployment/datapusher_settings.py /etc/ckan/
 
     #open up port 8800 on apache where the datapusher accepts connections.
     #make sure you only run these 2 functions once otherwise you will need
