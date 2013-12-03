@@ -19,7 +19,11 @@ import sys, os
 #sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration -----------------------------------------------------
+rst_epilog = '''
 
+.. |datastore| replace:: DataStore
+.. |datapusher| replace:: DataPusher
+'''
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
@@ -40,7 +44,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'datapusher'
+project = u'DataPusher'
 copyright = u'2013, Open Knowledge Foundation'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -114,7 +118,7 @@ html_theme_options = {
         'show_okfn_logo': False,
     }
 html_sidebars = {
-    '**':  ['globaltoc.html']
+    '**':  ['localtoc.html']
 }
 
 
