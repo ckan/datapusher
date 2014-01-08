@@ -24,15 +24,19 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     #install requirements for the DataPusher
     apt-get install python-dev build-essential libxslt1-dev libxml2-dev
 
-    #go to the ckan source directory
-    cd /usr/lib/ckan/default/src
+    #create a virtualenv for datapusher
+    sudo virtualenv /usr/lib/ckan/datapusher
+
+    #create a source directory and switch to it
+    sudo mkdir /usr/lib/ckan/datapusher/src
+    cd /usr/lib/ckan/datapusher/src
 
     #clone the source
     sudo git clone https://github.com/okfn/datapusher.git
 
     #install the datapussher
     cd datapusher
-    sudo /usr/lib/ckan/default/bin/python setup.py develop
+    sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
 
     #copy the standard apache config file
     sudo cp deployment/datapusher /etc/apache2/sites-available/
@@ -57,7 +61,7 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     the default one you need to adapt the following line in the
     ``datapusher.wsgi`` file to point to the virtualenv you are using::
 
-        activate_this = os.path.join('/usr/lib/ckan/default/bin/activate_this.py')
+        activate_this = os.path.join('/usr/lib/ckan/datapusher/bin/activate_this.py')
 
 
 In order to tell CKAN where this webservice is located, the following must be added to the ``[app:main]`` section of your CKAN configuration file (generally located at ``/etc/ckan/default/production.ini``)::
