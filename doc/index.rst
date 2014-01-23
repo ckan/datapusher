@@ -68,6 +68,12 @@ In order to tell CKAN where this webservice is located, the following must be ad
 
     ckan.datapusher.url = http://0.0.0.0:8800/
 
+The DataPusher also requires the ``ckan.site_url`` configuration option to be set
+on your configuration file::
+
+
+    ckan.site_url = http://your.ckan.instance.com
+
 CKAN 2.2 and above
 ------------------
 
