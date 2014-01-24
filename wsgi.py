@@ -6,3 +6,13 @@ assert(jobs.push_to_datastore)
 
 web.configure()
 app = web.app
+
+if __name__ == "__main__":
+    import logging
+    import os
+    port = os.environ.get('PORT', 5000)
+    debug = os.environ.get('DEBUG', False)
+    host = os.environ.get('HOST', '0.0.0.0')
+    logging.basicConfig(level=logging.NOTSET)
+    app.run(host=host, port=port, debug=debug)
+
