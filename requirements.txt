@@ -1,0 +1,4 @@
+https://github.com/okfn/ckan-service-provider/archive/master.zip
+messytables>=0.12.0
+python-slugify
+Requests
