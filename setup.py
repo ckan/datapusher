@@ -17,9 +17,6 @@ setup(name='datapusher',
       include_package_data=True,
       zip_safe=False,
       install_requires=[],
-      dependency_links=[
-          'https://github.com/okfn/ckan-service-provider/tarball/master#egg=ckanserviceprovider',
-      ],
       entry_points={
             'console_scripts': [
                   'datapusher = datapusher.main:main'
