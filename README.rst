@@ -19,7 +19,28 @@ For an installation guide please go to the `DataPusher documentation`_.
 The Data Pusher is built on the `CKAN Service Provider`_
 and Messytables_.
 
+## For Developers
+
+Get the code:
+
+    git clone https://github.com/okfn/datapusher
+    cd datapusher
+
+Install the dependencies:
+
+    pip install -r requirements.txt
+    pip install -e .
+
+Run DataPusher
+
+    python wsgi.py
+
+Now open your favourite browser and point it at:
+
+<http://localhost:5000/>
+    
 .. _Datastorer: https://github.com/okfn/ckanext-datastorer
 .. _DataPusher documentation: http://docs.ckan.org/projects/datapusher
 .. _CKAN Service Provider: https://github.com/okfn/ckan-service-provider
 .. _Messytables: https://github.com/okfn/messytables
+

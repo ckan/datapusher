@@ -16,13 +16,7 @@ setup(name='datapusher',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      install_requires=['ckanserviceprovider',
-                        'messytables>=0.12.0',
-                        'python-slugify',
-                        'Requests'],
-      dependency_links=[
-          'https://github.com/okfn/ckan-service-provider/tarball/master#egg=ckanserviceprovider',
-      ],
+      install_requires=[],
       entry_points={
             'console_scripts': [
                   'datapusher = datapusher.main:main'
