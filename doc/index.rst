@@ -32,7 +32,7 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     cd /usr/lib/ckan/datapusher/src
 
     #clone the source
-    sudo git clone https://github.com/okfn/datapusher.git
+    sudo git clone https://github.com/ckan/datapusher.git
 
     #install the datapussher
     cd datapusher
@@ -97,7 +97,7 @@ To install it, follow the following steps ::
     cd /usr/lib/ckan/default/src
 
     #clone the DataPusher CKAN extension
-    sudo git clone https://github.com/okfn/ckanext-datapusherext.git
+    sudo git clone https://github.com/ckan/ckanext-datapusherext.git
 
     #install datapusherext
     cd ckanext-datapusherext
@@ -175,4 +175,4 @@ http://www.fsf.org/licensing/licenses/agpl-3.0.html
 .. _CKAN Documentation: http://docs.ckan.org
 .. _install CKAN: http://docs.ckan.org/en/latest/installing.html
 .. _DataStore: http://docs.ckan.org/en/latest/datastore.html
-.. _ckanext-datapusherext: https://github.com/okfn/ckanext-datapusherext
+.. _ckanext-datapusherext: https://github.com/ckan/ckanext-datapusherext
