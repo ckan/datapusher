@@ -61,11 +61,12 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     sudo mkdir /usr/lib/ckan/datapusher/src
     cd /usr/lib/ckan/datapusher/src
 
-    #clone the source
-    sudo git clone https://github.com/ckan/datapusher.git
+    #clone the source (always target the stable branch)
+    sudo git clone https://github.com/ckan/datapusher.git@stable
 
-    #install the DataPusher
+    #install the DataPusher and its requirements
     cd datapusher
+    sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
     sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
 
     #copy the standard Apache config file
