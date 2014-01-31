@@ -52,7 +52,7 @@ These instructions set up the |datapusher| webservice on Apache running on port 
 ::
 
     #install requirements for the DataPusher
-    apt-get install python-dev build-essential libxslt1-dev libxml2-dev
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
 
     #create a virtualenv for datapusher
     sudo virtualenv /usr/lib/ckan/datapusher
