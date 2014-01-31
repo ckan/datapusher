@@ -18,8 +18,9 @@ For an installation guide please go to the `DataPusher documentation`_.
 
 The Data Pusher is built on the `CKAN Service Provider`_
 and Messytables_.
-
-.. _Datastorer: https://github.com/ckan/ckanext-datastorer
+    
+.. _Datastorer: https://github.com/okfn/ckanext-datastorer
 .. _DataPusher documentation: http://docs.ckan.org/projects/datapusher
 .. _CKAN Service Provider: https://github.com/okfn/ckan-service-provider
 .. _Messytables: https://github.com/okfn/messytables
+
