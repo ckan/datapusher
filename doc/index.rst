@@ -8,11 +8,41 @@ You should have a CKAN instance with the |datastore| installed before using this
 Head to the `CKAN documentation`_ for information on how to `install CKAN`_ and
 set up the `DataStore`_.
 
-Installation and Setup
-======================
+Development installation
+========================
+
+Get the code::
+
+    git clone https://github.com/ckan/datapusher
+    cd datapusher
+
+Install the dependencies::
+
+    pip install -r requirements.txt
+    pip install -e .
+
+Run the DataPusher::
+
+    python wsgi.py
+
+By default DataPusher should be running at the following port:
+
+    http://localhost:8800/
+
+You can change the ``HOST``, ``PORT`` and ``DEBUG`` environment variables to
+suit your needs.
+
+
+Production installation and Setup
+=================================
 
 Download and Install (All CKAN Versions)
 ----------------------------------------
+
+.. note:: Starting from CKAN 2.2, if you installed CKAN via a `package install`_,
+    the DataPusher has already been installed and deployed for you. You can skip
+    directly to `Configuration`_.
+
 
 This assumes you already have CKAN installed on this server in the default location described in the CKAN install documentation (``/usr/lib/ckan/default``).
 If this is correct you should be able to run the following commands directly, if not you will need to adapt the previous path to your needs.
@@ -22,7 +52,7 @@ These instructions set up the |datapusher| webservice on Apache running on port 
 ::
 
     #install requirements for the DataPusher
-    apt-get install python-dev build-essential libxslt1-dev libxml2-dev
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
 
     #create a virtualenv for datapusher
     sudo virtualenv /usr/lib/ckan/datapusher
@@ -31,24 +61,25 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     sudo mkdir /usr/lib/ckan/datapusher/src
     cd /usr/lib/ckan/datapusher/src
 
-    #clone the source
-    sudo git clone https://github.com/okfn/datapusher.git
+    #clone the source (always target the stable branch)
+    sudo git clone -b stable https://github.com/ckan/datapusher.git
 
-    #install the datapussher
+    #install the DataPusher and its requirements
     cd datapusher
+    sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
     sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
 
-    #copy the standard apache config file
+    #copy the standard Apache config file
     sudo cp deployment/datapusher /etc/apache2/sites-available/
 
-    #copy the standard datapusher wsgi file
+    #copy the standard DataPusher wsgi file
     #(see note below if you are not using the default CKAN install location)
     sudo cp deployment/datapusher.wsgi /etc/ckan/
 
-    #copy the standard datapusher settings.
+    #copy the standard DataPusher settings.
     sudo cp deployment/datapusher_settings.py /etc/ckan/
 
-    #open up port 8800 on apache where the |datapusher| accepts connections.
+    #open up port 8800 on Apache where the DataPusher accepts connections.
     #make sure you only run these 2 functions once otherwise you will need
     #to manually edit /etc/apache2/ports.conf.
     sudo sh -c 'echo "NameVirtualHost *:8800" >> /etc/apache2/ports.conf'
@@ -64,6 +95,9 @@ These instructions set up the |datapusher| webservice on Apache running on port 
         activate_this = os.path.join('/usr/lib/ckan/datapusher/bin/activate_this.py')
 
 
+Configuration
+-------------
+
 In order to tell CKAN where this webservice is located, the following must be added to the ``[app:main]`` section of your CKAN configuration file (generally located at ``/etc/ckan/default/production.ini``)::
 
     ckan.datapusher.url = http://0.0.0.0:8800/
@@ -75,7 +109,7 @@ on your configuration file::
     ckan.site_url = http://your.ckan.instance.com
 
 CKAN 2.2 and above
-------------------
+++++++++++++++++++
 
 If you are using at least CKAN 2.2, you just need to add ``datapusher`` to the plugins in your CKAN configuration file::
 
@@ -86,7 +120,7 @@ Restart apache::
     sudo service apache2 restart
 
 CKAN 2.1
---------
+++++++++
 
 If you are using CKAN 2.1, the logic for interacting with the |datapusher| is
 located in a separate extension, ckanext-datapusherext_.
@@ -97,7 +131,7 @@ To install it, follow the following steps ::
     cd /usr/lib/ckan/default/src
 
     #clone the DataPusher CKAN extension
-    sudo git clone https://github.com/okfn/ckanext-datapusherext.git
+    sudo git clone https://github.com/ckan/ckanext-datapusherext.git
 
     #install datapusherext
     cd ckanext-datapusherext
@@ -174,5 +208,6 @@ http://www.fsf.org/licensing/licenses/agpl-3.0.html
 .. _CKAN: http://ckan.org
 .. _CKAN Documentation: http://docs.ckan.org
 .. _install CKAN: http://docs.ckan.org/en/latest/installing.html
+.. _package install: http://docs.ckan.org/en/latest/install-from-package.html
 .. _DataStore: http://docs.ckan.org/en/latest/datastore.html
-.. _ckanext-datapusherext: https://github.com/okfn/ckanext-datapusherext
+.. _ckanext-datapusherext: https://github.com/ckan/ckanext-datapusherext
