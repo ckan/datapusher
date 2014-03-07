@@ -150,18 +150,12 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
     check_response(r, url, 'CKAN DataStore')
 
 
-def update_resource(resource, api_key, ckan_url, set_url_type=False):
+def update_resource(resource, api_key, ckan_url):
     """
     Update webstore_url and webstore_last_updated in CKAN
     """
 
-    resource.update({
-        'webstore_url': 'active',
-        'webstore_last_updated': datetime.datetime.now().isoformat()
-    })
-
-    if set_url_type:
-        resource['url_type'] = 'datapusher'
+    resource['url_type'] = 'datapusher'
 
     url = get_url('resource_update', ckan_url)
     r = requests.post(
@@ -329,5 +323,5 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
         n=count, res_id=resource_id))
 
-    update_resource(resource, api_key, ckan_url,
-                    set_url_type=data.get('set_url_type', False))
+    if data.get('set_url_type', False):
+        update_resource(resource, api_key, ckan_url)
