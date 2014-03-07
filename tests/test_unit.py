@@ -117,11 +117,8 @@ class TestCkanActionCalls(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, url,
                                body=u'{"success": true}',
                                content_type="application/json")
-        jobs.update_resource({'foo': 42}, 'my_key', 'http://www.ckan.org/', True)
-        assert json.loads(httpretty.last_request().body)['url_type'] == 'datapusher'
-
         jobs.update_resource({'foo': 42}, 'my_key', 'http://www.ckan.org/')
-        assert not json.loads(httpretty.last_request().body).get('url_type')
+        assert json.loads(httpretty.last_request().body)['url_type'] == 'datapusher'
 
     @httpretty.activate
     def test_send_resource_to_datastore(self):

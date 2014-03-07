@@ -251,10 +251,10 @@ class TestImport(unittest.TestCase):
 
         headers, results = jobs.push_to_datastore('fake_id', data, True)
         results = list(results)
-        assert_equal(len(headers), 11)
+        assert_equal(len(headers), 9)
         assert_equal(len(results), 82)
-        assert_equal(headers[1]['id'].strip(), u'1985')
-        assert_equal(results[1]['column_0'].strip(), u'Gefäßchirurgie')
+        assert_equal(headers[0]['id'].strip(), u'1985')
+        assert_equal(results[1]['1993'].strip(), u'379')
 
     @httpretty.activate
     def test_mostly_numbers(self):
