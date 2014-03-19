@@ -113,7 +113,7 @@ sys.path.append(os.path.abspath('_themes'))
 html_theme_path = ['_themes']
 html_theme = 'sphinx-theme-okfn'
 html_theme_options = {
-        'logo_icon': 'ckanlogo.png',
+        'logo_icon': '_static/ckanlogo.png',
         'show_version': False,
         'show_okfn_logo': False,
     }
