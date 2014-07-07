@@ -11,6 +11,10 @@ set up the `DataStore`_.
 Development installation
 ========================
 
+Install the required packages::
+
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
+
 Get the code::
 
     git clone https://github.com/ckan/datapusher
