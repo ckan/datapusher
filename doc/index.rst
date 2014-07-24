@@ -2,11 +2,12 @@
 |datapusher| - Automatically add Data to the CKAN |datastore|
 =============================================================
 
-This application is a service that adds automatic CSV/Excel file loading to CKAN_.
+This application is a service that adds automatic CSV/Excel file loading to
+CKAN_.
 
-You should have a CKAN instance with the |datastore| installed before using this.
-Head to the `CKAN documentation`_ for information on how to `install CKAN`_ and
-set up the `DataStore`_.
+You should have a CKAN instance with the |datastore| installed before using
+this.  Head to the `CKAN documentation`_ for information on how to `install
+CKAN`_ and set up the `DataStore`_.
 
 Development installation
 ========================
@@ -27,7 +28,9 @@ Install the dependencies::
 
 Run the DataPusher::
 
-    python wsgi.py
+    JOB_CONFIG='/home/foo/datapusher/deployment/datapusher_settings.py python wsgi.py
+
+.. note:: `JOB_CONFIG` environment variable needs the full path to datapusher.
 
 By default DataPusher should be running at the following port:
 
@@ -102,12 +105,14 @@ These instructions set up the |datapusher| webservice on Apache running on port 
 Configuration
 -------------
 
-In order to tell CKAN where this webservice is located, the following must be added to the ``[app:main]`` section of your CKAN configuration file (generally located at ``/etc/ckan/default/production.ini``)::
+In order to tell CKAN where this webservice is located, the following must be
+added to the ``[app:main]`` section of your CKAN configuration file (generally
+located at ``/etc/ckan/default/production.ini``)::
 
     ckan.datapusher.url = http://0.0.0.0:8800/
 
-The DataPusher also requires the ``ckan.site_url`` configuration option to be set
-on your configuration file::
+The DataPusher also requires the ``ckan.site_url`` configuration option to be
+set on your configuration file::
 
 
     ckan.site_url = http://your.ckan.instance.com
@@ -115,7 +120,8 @@ on your configuration file::
 CKAN 2.2 and above
 ++++++++++++++++++
 
-If you are using at least CKAN 2.2, you just need to add ``datapusher`` to the plugins in your CKAN configuration file::
+If you are using at least CKAN 2.2, you just need to add ``datapusher`` to the
+plugins in your CKAN configuration file::
 
     ckan.plugins = <other plugins> datapusher
 
@@ -142,7 +148,8 @@ To install it, follow the following steps ::
     sudo /usr/lib/ckan/default/bin/python setup.py develop
 
 
-Add ``datapusherext`` to the plugins line in ``/etc/ckan/default/production.ini``::
+Add ``datapusherext`` to the plugins line in
+``/etc/ckan/default/production.ini``::
 
     ckan.plugins = <other plugins> datapusherext
 
@@ -174,8 +181,8 @@ Using the |datapusher|
 ======================
 
 The |datapusher| will work without any more configuration as long as the
-``datapusher`` (or ``datapusherext`` for version 2.1) plugin is installed and added
-to the ckan config file.
+``datapusher`` (or ``datapusherext`` for version 2.1) plugin is installed and
+added to the ckan config file.
 
 Any file that has a format of csv or xls will be attempted to be loaded
 into to datastore.
