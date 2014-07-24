@@ -4,9 +4,9 @@ Production installation and Setup
 Download and Install (All CKAN Versions)
 ----------------------------------------
 
-.. note:: Starting from CKAN 2.2, if you installed CKAN via a `package install`_,
-    the DataPusher has already been installed and deployed for you. You can skip
-    directly to `Configuration`_.
+.. note:: Starting from CKAN 2.2, if you installed CKAN via a
+    `package install`_, the DataPusher has already been installed and deployed
+    for you. You can skip directly to :doc:`ckan-config`.
 
 
 This assumes you already have CKAN installed on this server in the default
@@ -95,3 +95,5 @@ proxy requests to gunicorn.
 
     #run datapusher with gunicorn
     JOB_CONFIG='/usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher_settings.py' gunicorn -b 127.0.0.1:8800 wsgi:app
+
+.. _package install: http://docs.ckan.org/en/latest/install-from-package.html

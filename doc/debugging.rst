@@ -1,3 +1,6 @@
+Debugging
+=========
+
 Test the configuration
 ----------------------
 
@@ -16,3 +19,9 @@ Error and logs
 
 If there are any issues you should look in ``/var/log/apache2/datapusher.error.log``.
 All log output will be put in there.
+
+Debugging Gunicorn
+------------------
+
+Gunicorn doesn't print error logs to the console by default. Use the option
+`--log-file=-` to print logs to the console for debugging.
