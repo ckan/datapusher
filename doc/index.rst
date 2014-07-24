@@ -28,16 +28,15 @@ Install the dependencies::
 
 Run the DataPusher::
 
-    JOB_CONFIG='/home/foo/datapusher/deployment/datapusher_settings.py python wsgi.py
-
-.. note:: `JOB_CONFIG` environment variable needs the full path to datapusher.
+    python datapusher/main.py deployment/datapusher_settings.py
 
 By default DataPusher should be running at the following port:
 
     http://localhost:8800/
 
-You can change the ``HOST``, ``PORT`` and ``DEBUG`` environment variables to
-suit your needs.
+If you need to change the host or port, copy
+`deployment/datapusher_settings.py` to
+`deployment/datapusher_local_settings.py` and modify the file.
 
 
 Production installation and Setup
