@@ -14,7 +14,7 @@ Development installation
 
 Install the required packages::
 
-    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git libffi-dev
 
 Get the code::
 
@@ -59,7 +59,7 @@ These instructions set up the |datapusher| webservice on Apache running on port 
 ::
 
     #install requirements for the DataPusher
-    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git libffi-dev
 
     #create a virtualenv for datapusher
     sudo virtualenv /usr/lib/ckan/datapusher
