@@ -2,9 +2,10 @@ language: python
 python:
   - "2.7"
 install:
+  - pip install --force-reinstall --upgrade https://pypi.python.org/packages/source/p/pip/pip-1.5.6.tar.gz
   - pip install -r requirements-dev.txt
   - pip install .
-  - pip install coveralls --use-mirrors
+  - pip install coveralls
 script: nosetests --with-coverage --cover-package=datapusher
 after_success:
   - coveralls
