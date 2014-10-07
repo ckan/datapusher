@@ -28,7 +28,7 @@ Install the dependencies::
 
 Run the DataPusher::
 
-    JOB_CONFIG='/home/foo/datapusher/deployment/datapusher_settings.py python wsgi.py
+    JOB_CONFIG='/home/foo/datapusher/deployment/datapusher_settings.py' python wsgi.py
 
 .. note:: `JOB_CONFIG` environment variable needs the full path to datapusher.
 
