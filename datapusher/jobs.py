@@ -282,16 +282,17 @@ def push_to_datastore(task_id, input, dry_run=False):
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
     row_set.register_processor(messytables.types_processor(types))
 
-    headers = [header for header in headers if header]
+    headers = [header.strip() for header in headers if header.strip()]
     headers_set = set(headers)
 
     def row_iterator():
         for row in row_set:
             data_row = {}
             for index, cell in enumerate(row):
-                if cell.column not in headers_set:
+                column_name = cell.column.strip()
+                if column_name not in headers_set:
                     continue
-                data_row[cell.column] = cell.value
+                data_row[column_name] = cell.value
             yield data_row
     result = row_iterator()
 
