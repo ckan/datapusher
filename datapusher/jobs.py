@@ -71,17 +71,17 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
             who=who,
             url=request_url))
 
-    message = '{who} bad response. Status code: {code} {reason}. At: {url}. Response: {resp}'
+    message = '{who} bad response. Status code: {code} {reason}. At: {url}.'
     try:
         if not response.status_code in good_status:
             json_response = response.json()
             if not ignore_no_success or json_response.get('success'):
-                raise util.JobError(message.format(
-                                    who=who,
-                                    code=response.status_code,
-                                    reason=response.reason,
-                                    url=request_url,
-                                    resp=pprint.pformat(json_response)))
+                e_message = message.format(who=who, code=response.status_code,
+                                           reason=response.reason,
+                                           url=request_url)
+                raise util.HttpError(e_message, http_code=response.status_code,
+                                     request_url=request_url,
+                                     response=json_response)
     except ValueError:
         raise util.JobError(message.format(
                             who=who,
@@ -314,11 +314,22 @@ def push_to_datastore(task_id, input, dry_run=False):
         return headers_dicts, result
 
     count = 0
-    for i, records in enumerate(chunky(result, 250)):
+    chunk_size = 250
+    for i, records in enumerate(chunky(result, chunk_size)):
+        logger.info('Saving records {} - {}'.format(count+1, 
+                                                    count+chunk_size+1))
+        try:
+            send_resource_to_datastore(resource, headers_dicts,
+                                       records, api_key, ckan_url)
+        except util.JobError, e:
+            logger.error(
+                'Error saving records {} - {}.\nLine starting: "{}".'
+                '\n Line ending "{}".'.format( count+1, count+chunk_size+1,
+                    str(records[0])[:100], str(records[-1])[:100])
+            )
+            logger.error('Aborting import process')
+            raise e
         count += len(records)
-        logger.info('Saving chunk {number}'.format(number=i))
-        send_resource_to_datastore(resource, headers_dicts,
-                                   records, api_key, ckan_url)
 
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
         n=count, res_id=resource_id))
