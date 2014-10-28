@@ -318,6 +318,26 @@ def push_to_datastore(task_id, input, dry_run=False):
     for i, records in enumerate(chunky(result, chunk_size)):
         logger.info('Saving records {} - {}'.format(count+1, 
                                                     count+chunk_size+1))
+
+        chunk_types = messytables.type_guess(
+            records_to_cells(records, headers),
+            types=TYPES,
+            strict=True
+        )
+        differing_types = get_differing_types(headers, types, chunk_types)
+        if differing_types:
+            changed_columns = ''
+            for column, column_types in differing_types.iteritems():
+                change_msg = '"{column}" column has changed from {old} to {new}. '
+                changed_columns += change_msg.format(column=column,
+                                                     old=column_types[0],
+                                                     new=column_types[1])
+
+            logger.warn('The data types of the records {start} - {end} do not '
+                        'seem to match the types previously detected. Changed '
+                        'columns: {columns}'.format(start=count+1,
+                                                    end=count+chunk_size+1,
+                                                    columns=changed_columns))
         try:
             send_resource_to_datastore(resource, headers_dicts,
                                        records, api_key, ckan_url)
@@ -336,3 +356,16 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     if data.get('set_url_type', False):
         update_resource(resource, api_key, ckan_url)
+
+
+def records_to_cells(records, headers):
+    for row in records:
+        yield [ messytables.Cell(row[header], header) for header in headers ]
+
+
+def get_differing_types(headers, original_types, current_chunk_types):
+    '''Returns the columns where the types differ'''
+    return dict((headers[i], types) for i, types
+             in enumerate(zip(original_types, current_chunk_types))
+             if type(types[0]) != type(types[1])
+           )
