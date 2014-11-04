@@ -76,8 +76,11 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
     sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
 
-    #copy the standard Apache config file
+    #copy the standard Apache config file 
+    #(if apache < 2.4)
     sudo cp deployment/datapusher.conf /etc/apache2/sites-available/
+    #(if apache >= 2.4)
+    sudo cp deployment/datapusher.apache2-4.conf /etc/apache2/sites-available/datapusher.conf
 
     #copy the standard DataPusher wsgi file
     #(see note below if you are not using the default CKAN install location)
@@ -93,7 +96,7 @@ These instructions set up the |datapusher| webservice on Apache running on port 
     sudo sh -c 'echo "Listen 8800" >> /etc/apache2/ports.conf'
 
     #enable DataPusher Apache site
-    sudo a2ensite datapusher
+    sudo a2ensite datapusher.conf
 
 .. note:: If you are installing the |datapusher| on a different location than
     the default one you need to adapt the following line in the
