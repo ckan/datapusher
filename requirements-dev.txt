@@ -1,4 +1,4 @@
 -r requirements.txt
 httpretty>=0.6
 nose==1.2.1
-https://github.com/okfn/ckan-service-provider/archive/master.zip
+https://github.com/ckan/ckan-service-provider/archive/master.zip
