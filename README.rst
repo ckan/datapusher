@@ -6,6 +6,9 @@ DataPusher - Automatically add Data to the CKAN DataStore
     :target: http://travis-ci.org/ckan/datapusher
     :alt: Build Status
 
+.. image:: https://coveralls.io/repos/ckan/datapusher/badge.png?branch=master
+  :target: https://coveralls.io/r/ckan/datapusher?branch=master
+
 A service that extracts data from files that contain tabular data (like CSV or
 Excel) and writes it to the CKAN DataStore. You only have to provide a URL to
 the resource, an API key and the URL to your CKAN instance. The DataPusher
