@@ -31,6 +31,7 @@ http://www.fsf.org/licensing/licenses/agpl-3.0.html
 
 .. _CKAN: http://ckan.org
 .. _CKAN Documentation: http://docs.ckan.org
-.. _install CKAN: http://docs.ckan.org/en/latest/installing.html
-.. _package install: http://docs.ckan.org/en/latest/install-from-package.html
-.. _DataStore: http://docs.ckan.org/en/latest/datastore.html
+.. _install CKAN: http://docs.ckan.org/en/latest/maintaining/installing/index.html
+.. _package install: http://docs.ckan.org/en/latest/maintaining/installing/install-from-package.html
+.. _DataStore: http://docs.ckan.org/en/latest/maintaining/datastore.html#setting-up-the-datastore
+.. _ckanext-datapusherext: https://github.com/ckan/ckanext-datapusherext
