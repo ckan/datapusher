@@ -9,7 +9,6 @@ import unittest
 
 import httpretty
 
-import ckanserviceprovider.web as web
 import datapusher.main as main
 import datapusher.jobs as jobs
 import ckanserviceprovider.util as util
@@ -17,7 +16,6 @@ import ckanserviceprovider.util as util
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'settings_test.py')
 
-web.configure()
 app = main.serve_test()
 
 
