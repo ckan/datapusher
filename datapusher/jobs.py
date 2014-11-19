@@ -205,8 +205,9 @@ def push_to_datastore(task_id, input, dry_run=False):
     resource's data file and, if the data file has changed since last time,
     parses the data and posts it into CKAN's DataStore.
 
-    :param dry_run: Only fetch and parse the resource and return the results
-                    instead of storing it in the datastore (for testing)
+    :param dry_run: Fetch and parse the data file but don't actually post the
+        data to the DataStore, instead return the data headers and rows that
+        would have been posted.
     :type dry_run: boolean
 
     '''
