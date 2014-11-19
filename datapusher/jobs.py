@@ -199,11 +199,16 @@ def validate_input(input):
 
 @job.async
 def push_to_datastore(task_id, input, dry_run=False):
-    '''Show link to documentation.
+    '''Download and parse a resource push its data into CKAN's DataStore.
+
+    An asynchronous job that gets a resource from CKAN, downloads the
+    resource's data file and, if the data file has changed since last time,
+    parses the data and posts it into CKAN's DataStore.
 
     :param dry_run: Only fetch and parse the resource and return the results
                     instead of storing it in the datastore (for testing)
     :type dry_run: boolean
+
     '''
     handler = util.StoringHandler(task_id, input)
     logger = logging.getLogger(task_id)
