@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/ckan/datapusher.png?branch=master)](https://travis-ci.org/ckan/datapusher)
-[![Coverage Status](https://coveralls.io/repos/ckan/datapusher.png?branch=master)](https://coveralls.io/r/ckan/datapusher?branch=master)
+[![Coverage Status](https://coveralls.io/repos/ckan/datapusher/badge.png?branch=master)](https://coveralls.io/r/ckan/datapusher?branch=master)
 [![Latest Version](https://pypip.in/version/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
 [![Downloads](https://pypip.in/download/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
 [![Supported Python versions](https://pypip.in/py_versions/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
