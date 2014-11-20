@@ -1,4 +1,4 @@
-https://github.com/ckan/ckan-service-provider/archive/stable.zip
+ckanserviceprovider==0.0.1
 messytables>=0.12.0
 python-slugify
 Requests
