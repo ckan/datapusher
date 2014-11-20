@@ -13,8 +13,8 @@
 [Messytables]: https://github.com/okfn/messytables
 
 
-DataPusher - Automatically add Data to the CKAN DataStore
-=========================================================
+DataPusher
+==========
 
 DataPusher is a standalone web service that automatically downloads any CSV or
 XLS (Excel) data files from a CKAN site's resources when they are added to the
