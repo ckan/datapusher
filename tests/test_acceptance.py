@@ -273,7 +273,7 @@ class TestImport(unittest.TestCase):
 
     @httpretty.activate
     def test_real_csv(self):
-        """Test fetching and parsing a more realistic CCSV file.
+        """Test fetching and parsing a more realistic CSV file.
 
         When given dry_run=True and a resource with a CSV file, the
         push_to_datastore job should return the right headers and rows from the
