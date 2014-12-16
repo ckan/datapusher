@@ -122,9 +122,12 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
         if not response.status_code in good_status:
             json_response = response.json()
             if not ignore_no_success or json_response.get('success'):
-                message = message.format(
-                    who=who, code=response.status_code, reason=response.reason,
-                    url=request_url)
+                try:
+                    message = json_response["error"]["message"]
+                except Exception:
+                    message = message.format(
+                        who=who, code=response.status_code,
+                        reason=response.reason, url=request_url)
                 raise HTTPError(
                     message, status_code=response.status_code,
                     request_url=request_url, response=response.text)
