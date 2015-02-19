@@ -65,6 +65,7 @@ nosetests
 To build the documentation:
 
 ```bash
+pip install -r doc-requirements.txt
 python setup.py build_sphinx
 ```
 
