@@ -26,3 +26,17 @@ If you want to retry an upload go into the resource edit form in CKAN and
 just click the "Update" button to resubmit the resource metadata.
 This will retrigger an upload.
 
+Configuring the guessing of types
+---------------------------------
+
+The ``datapusher`` uses Messytables_ in order to infer data types. A default 
+configuration is provided which is sufficient in many cases. Depending on your
+data however, you may need to implement your own ``Messytables`` types. 
+
+You can specify the types to use with the following settings in your datapusher_settings.py::
+
+    TYPES = [messytables.StringType, messytables.DecimalType, YourCustomType...]
+    TYPE_MAPPING = {'String': 'text', 'Decimal': 'numeric', 'YourCustom': 'timestamp'... }
+
+
+.. _Messytables: https://messytables.readthedocs.org/en/latest/

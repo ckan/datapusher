@@ -21,6 +21,7 @@ from slugify import slugify
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
+from ckanserviceprovider import web 
 
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
@@ -28,7 +29,7 @@ if not locale.getlocale()[0]:
 MAX_CONTENT_LENGTH = 10485760  # 10MB
 DOWNLOAD_TIMEOUT = 30
 
-TYPE_MAPPING = {
+_TYPE_MAPPING = {
     'String': 'text',
     # 'int' may not be big enough,
     # and type detection may not realize it needs to be big
@@ -37,8 +38,11 @@ TYPE_MAPPING = {
     'DateUtil': 'timestamp'
 }
 
-TYPES = [messytables.StringType, messytables.DecimalType,
-         messytables.IntegerType, messytables.DateUtilType]
+_TYPES = [messytables.StringType, messytables.DecimalType,
+          messytables.IntegerType, messytables.DateUtilType]
+
+TYPE_MAPPING = web.app.config.get('TYPE_MAPPING', _TYPE_MAPPING)
+TYPES = web.app.config.get('TYPES', _TYPES)
 
 DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
