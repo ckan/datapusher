@@ -15,6 +15,7 @@ import decimal
 import hashlib
 import cStringIO
 import time
+import string
 
 import messytables
 from slugify import slugify
@@ -48,7 +49,12 @@ DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
+KEY_CHARS = string.digits + string.letters + "_-"
 
+def _munged_sheet_name(name):
+    return ''.join([
+        c for c in name if c in KEY_CHARS
+    ])
 
 class HTTPError(util.JobError):
     """Exception that's raised if a job fails due to an HTTP problem."""
@@ -219,6 +225,35 @@ def update_resource(resource, api_key, ckan_url):
 
     check_response(r, url, 'CKAN')
 
+def revision_show(id, api_key, ckan_url):
+    """
+    Get resource revision
+    """
+    url = get_url('revision_show', ckan_url)
+
+    r = requests.get(
+        url,
+        params={'id':id},
+        headers={'Content-Type': 'application/json',
+                 'Authorization': api_key})
+    check_response(r, url, 'CKAN')
+
+    return r.json()['result']
+
+def package_search(q, api_key, ckan_url):
+    """
+    Get resource revision
+    """
+    url = get_url('package_search', ckan_url)
+
+    r = requests.get(
+        url,
+        params={'q':q},
+        headers={'Content-Type': 'application/json',
+                 'Authorization': api_key})
+    check_response(r, url, 'CKAN')
+
+    return r.json()['result']
 
 def get_resource(resource_id, ckan_url, api_key):
     """
@@ -227,6 +262,20 @@ def get_resource(resource_id, ckan_url, api_key):
     url = get_url('resource_show', ckan_url)
     r = requests.post(url,
                       data=json.dumps({'id': resource_id}),
+                      headers={'Content-Type': 'application/json',
+                               'Authorization': api_key}
+                      )
+    check_response(r, url, 'CKAN')
+
+    return r.json()['result']
+
+def create_resource(res_dict, ckan_url, api_key):
+    """
+    Gets available information about the resource from CKAN
+    """
+    url = get_url('resource_create', ckan_url)
+    r = requests.post(url,
+                      data=json.dumps(res_dict),
                       headers={'Content-Type': 'application/json',
                                'Authorization': api_key}
                       )
@@ -340,54 +389,141 @@ def push_to_datastore(task_id, input, dry_run=False):
         except:
             raise util.JobError(e)
 
-    row_set = table_set.tables.pop()
-    offset, headers = messytables.headers_guess(row_set.sample)
-    row_set.register_processor(messytables.headers_processor(headers))
-    row_set.register_processor(messytables.offset_processor(offset + 1))
-    types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
-    row_set.register_processor(messytables.types_processor(types))
+    # send data to datastore
+    def processing_data(result, resource, headers_dicts):
+        count = 0
+        for i, records in enumerate(chunky(result, 250)):
+            count += len(records)
+            logger.info('Saving chunk {number}'.format(number=i))
+            send_resource_to_datastore(resource, headers_dicts,
+                                       records, api_key, ckan_url)
+        return count
 
-    headers = [header.strip() for header in headers if header.strip()]
-    headers_set = set(headers)
+    # row_set = table_set.tables.pop()
+    def handle_row_set(row_set, package_id=None, multitable=False):
+        offset, headers = messytables.headers_guess(row_set.sample)
+        row_set.register_processor(messytables.headers_processor(headers))
+        row_set.register_processor(messytables.offset_processor(offset + 1))
+        types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
+        row_set.register_processor(messytables.types_processor(types))
 
-    def row_iterator():
-        for row in row_set:
-            data_row = {}
-            for index, cell in enumerate(row):
-                column_name = cell.column.strip()
-                if column_name not in headers_set:
-                    continue
-                data_row[column_name] = cell.value
-            yield data_row
-    result = row_iterator()
+        headers = [header.strip() for header in headers if header.strip()]
+        headers_set = set(headers)
 
-    '''
-    Delete existing datstore resource before proceeding. Otherwise
-    'datastore_create' will append to the existing datastore. And if
-    the fields have significantly changed, it may also fail.
-    '''
-    logger.info('Deleting "{res_id}" from datastore.'.format(
-        res_id=resource_id))
-    delete_datastore_resource(resource_id, api_key, ckan_url)
+        def row_iterator():
+            for row in row_set:
+                data_row = {}
+                for index, cell in enumerate(row):
+                    column_name = cell.column.strip()
+                    if column_name not in headers_set:
+                        continue
+                    data_row[column_name] = cell.value
+                yield data_row
+        result = row_iterator()
 
-    headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
-                     for field in zip(headers, types)]
+        '''
+        Delete existing datstore resource before proceeding. Otherwise
+        'datastore_create' will append to the existing datastore. And if
+        the fields have significantly changed, it may also fail.
+        '''
+        child_id = resource_id
+        child_resource = resource
+        if multitable:
+            child_name = _munged_sheet_name(row_set.name)
+            child_id = '{res_id}-{sheet_name}'.format(res_id=resource_id, sheet_name=child_name)
+            try:
+                child_resource = get_resource(child_id, ckan_url, api_key)
+            except HTTPError, e:
+                res_dict = dict(
+                    package_id=package_id,
+                    id=child_id,
+                    url=resource.get('url', '/none'),
+                    name=row_set.name)
+                try:
+                    child_resource = create_resource(res_dict, ckan_url, api_key)
+                except Exception, e:
+                    raise e
 
-    logger.info('Determined headers and types: {headers}'.format(
-        headers=headers_dicts))
+# package_id (string) – id of package that the resource should be added to.
+# url (string) – url of resource
+# description (string) – (optional)
+# hash (string) – (optional)
+# name (string) – (optional)
+        
+        logger.info('Deleting "{res_id}" from datastore.'.format(
+            res_id=child_id))
+        delete_datastore_resource(child_id, api_key, ckan_url)
+
+        headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
+                         for field in zip(headers, types)]
+
+        logger.info('Determined headers and types: {headers}'.format(
+            headers=headers_dicts))
+
+        if dry_run:
+            return headers_dicts, result
+
+        count = processing_data(result, child_resource, headers_dicts)
+
+        logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
+            n=count, res_id=child_id))
+
+        if data.get('set_url_type', False):
+            update_resource(child_resource, api_key, ckan_url)
+
+        return headers_dicts, (count, row_set.name, child_id)
+
+    total_tables = len(table_set.tables)
+    package_id = None
+
+    if total_tables > 1:
+        try:
+            packages = revision_show(resource['revision_id'], api_key, ckan_url)['packages']
+            q = 'name:({packages})'.format(packages=' '.join(packages))
+            pack_dicts = package_search(q, api_key, ckan_url)
+            for pack in pack_dicts['results']:
+                for pack_res in pack['resources']:
+                    if resource['id'] == pack_res['id']:
+                        package_id = pack['id']
+                        break
+        except HTTPError, e:
+            print e
+
+    dry_res = []
+    for row_set in table_set.tables:
+        row_res = handle_row_set(row_set, package_id, total_tables > 1)
+        dry_res.append(row_res)
 
     if dry_run:
-        return headers_dicts, result
+        return dry_res
 
-    count = 0
-    for i, records in enumerate(chunky(result, 250)):
-        count += len(records)
-        logger.info('Saving chunk {number}'.format(number=i))
-        send_resource_to_datastore(resource, headers_dicts,
-                                   records, api_key, ckan_url)
+    if total_tables <= 1:
+        return
+
+    metatable = []
+    for columns, (rows, table_name, table_id) in dry_res:
+        record = {}
+        record['name'] = table_name
+        record['total_records'] = rows
+        record['column_type'] = ', '.join([ i['id'] + ' - ' + i['type'] for i in columns])
+        record['table_id'] = table_id
+
+        metatable.append(record)
+
+
+    delete_datastore_resource(resource['id'], api_key, ckan_url)
+    count = processing_data(metatable, resource, [
+        {'type':'text', 'id':'name'},
+        {'type':'numeric', 'id':'total_records'},
+        {'type':'text', 'id':'column_type'},
+        {'type':'text', 'id':'table_id'},
+        ])
 
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
-        n=count, res_id=resource_id))
+        n=count, res_id=resource['id']))
 
     if data.get('set_url_type', False):
         update_resource(resource, api_key, ckan_url)
+
+    # return headers_dicts, count
+
