@@ -189,6 +189,50 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
     except requests.exceptions.RequestException:
         raise util.JobError('Deleting existing datastore failed.')
 
+def remove_orphans(parent, children=[], **kargs):
+    all_res = resources_search('url:%s'%parent, **kargs)['results']
+    all_children = [
+        r['id'] for r in 
+        filter(
+            lambda r:
+                r['id'].startswith(parent) and
+                r['id'] != parent and
+                r['id'] not in children,
+            all_res
+        )]
+    for child in all_children:
+        delete_datastore_resource(child, **kargs)
+        resource_delete(child, **kargs)
+
+def resources_search(q, api_key, ckan_url):
+    """
+    Search resouces with SOLR
+    """
+    url = get_url('resource_search', ckan_url)
+
+    r = requests.get(
+        url,
+        params={'query':q},
+        headers={'Content-Type': 'application/json',
+                 'Authorization': api_key})
+    check_response(r, url, 'CKAN')
+
+    return r.json()['result']
+
+def resource_delete(id, api_key, ckan_url):
+    """
+    Remove resource
+    """
+    url = get_url('resource_delete', ckan_url)
+
+    r = requests.post(
+        url,
+        data=json.dumps({'id':id}),
+        headers={'Content-Type': 'application/json',
+                 'Authorization': api_key})
+    check_response(r, url, 'CKAN')
+
+    return r.json()['result']
 
 def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
     """
@@ -428,7 +472,9 @@ def push_to_datastore(task_id, input, dry_run=False):
         '''
         child_id = resource_id
         child_resource = resource
+        set_url_type = data.get('set_url_type', False)
         if multitable:
+            set_url_type = True
             child_name = _munged_sheet_name(row_set.name)
             child_id = '{res_id}-{sheet_name}'.format(res_id=resource_id, sheet_name=child_name)
             try:
@@ -438,17 +484,12 @@ def push_to_datastore(task_id, input, dry_run=False):
                     package_id=package_id,
                     id=child_id,
                     url=resource.get('url', '/none'),
-                    name=row_set.name)
+                    name='[Sheet]%s' % row_set.name)
                 try:
                     child_resource = create_resource(res_dict, ckan_url, api_key)
                 except Exception, e:
                     raise e
-
-# package_id (string) – id of package that the resource should be added to.
-# url (string) – url of resource
-# description (string) – (optional)
-# hash (string) – (optional)
-# name (string) – (optional)
+            child_resource['name'] = '[Sheet]%s' % row_set.name
         
         logger.info('Deleting "{res_id}" from datastore.'.format(
             res_id=child_id))
@@ -468,7 +509,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
             n=count, res_id=child_id))
 
-        if data.get('set_url_type', False):
+        if set_url_type:
             update_resource(child_resource, api_key, ckan_url)
 
         return headers_dicts, (count, row_set.name, child_id)
@@ -498,18 +539,22 @@ def push_to_datastore(task_id, input, dry_run=False):
         return dry_res
 
     if total_tables <= 1:
+        remove_orphans(resource['id'], api_key=api_key, ckan_url=ckan_url)
         return
 
     metatable = []
+    child_tables = []
     for columns, (rows, table_name, table_id) in dry_res:
         record = {}
         record['name'] = table_name
         record['total_records'] = rows
-        record['column_type'] = ', '.join([ i['id'] + ' - ' + i['type'] for i in columns])
+        record['column_type'] = ', '.join([ i['id'] + '->' + i['type'] for i in columns])
         record['table_id'] = table_id
 
+        child_tables.append(table_id)
         metatable.append(record)
 
+    remove_orphans(resource['id'], child_tables, api_key=api_key, ckan_url=ckan_url)
 
     delete_datastore_resource(resource['id'], api_key, ckan_url)
     count = processing_data(metatable, resource, [
