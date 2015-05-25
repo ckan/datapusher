@@ -358,6 +358,9 @@ def push_to_datastore(task_id, input, dry_run=False):
                 if column_name not in headers_set:
                     continue
                 data_row[column_name] = cell.value
+            # get rid of headers duplicate
+            if data_row.keys() == data_row.values():
+                continue
             yield data_row
     result = row_iterator()
 
