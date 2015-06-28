@@ -1,10 +1,10 @@
 [![Build Status](https://travis-ci.org/ckan/datapusher.png?branch=master)](https://travis-ci.org/ckan/datapusher)
 [![Coverage Status](https://coveralls.io/repos/ckan/datapusher/badge.png?branch=master)](https://coveralls.io/r/ckan/datapusher?branch=master)
-[![Latest Version](https://pypip.in/version/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
-[![Downloads](https://pypip.in/download/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
-[![Supported Python versions](https://pypip.in/py_versions/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
-[![Development Status](https://pypip.in/status/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
-[![License](https://pypip.in/license/datapusher/badge.svg)](https://pypi.python.org/pypi/datapusher/)
+[![Latest Version](https://img.shields.io/pypi/v/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
+[![Downloads](https://img.shields.io/pypi/dm/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
+[![Development Status](https://img.shields.io/pypi/status/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
+[![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://pypi.python.org/pypi/datapusher/)
 
 [PyPI]: https://pypi.python.org/pypi/datapusher
 [DataStorer]: https://github.com/ckan/ckanext-datastorer
