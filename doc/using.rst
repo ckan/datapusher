@@ -26,12 +26,23 @@ If you want to retry an upload go into the resource edit form in CKAN and
 just click the "Update" button to resubmit the resource metadata.
 This will retrigger an upload.
 
+
+Configuring the maximum upload size
+-----------------------------------
+
+By default the ``datapusher`` will only attempt to process files less than 10Mb
+in size.  To change this value you can specify the MAX_CONTENT_LENGTH setting in
+datapusher_settings.py
+
+    MAX_CONTENT_LENGTH = 1024  # 1Kb maximum size
+
+
 Configuring the guessing of types
 ---------------------------------
 
-The ``datapusher`` uses Messytables_ in order to infer data types. A default 
+The ``datapusher`` uses Messytables_ in order to infer data types. A default
 configuration is provided which is sufficient in many cases. Depending on your
-data however, you may need to implement your own ``Messytables`` types. 
+data however, you may need to implement your own ``Messytables`` types.
 
 You can specify the types to use with the following settings in your datapusher_settings.py::
 
