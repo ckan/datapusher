@@ -23,6 +23,10 @@ import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 from ckanserviceprovider import web
 
+# Tanmay - Added to disable InsecureRequestWarning
+# link: https://urllib3.readthedocs.org/en/latest/security.html#insecurerequestwarning
+requests.packages.urllib3.disable_warnings()
+
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
@@ -176,7 +180,8 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
                                  data=json.dumps({'id': resource_id,
                                                   'force': True}),
                                  headers={'Content-Type': 'application/json',
-                                          'Authorization': api_key}
+                                          'Authorization': api_key},
+                                 verify=False
                                  )
         check_response(response, delete_url, 'CKAN',
                        good_status=(201, 200, 404), ignore_no_success=True)
@@ -199,6 +204,7 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
                       data=json.dumps(request, cls=DatastoreEncoder),
                       headers={'Content-Type': 'application/json',
                                'Authorization': api_key},
+                      verify=False
                       )
     check_response(r, url, 'CKAN DataStore')
 
@@ -215,7 +221,9 @@ def update_resource(resource, api_key, ckan_url):
         url,
         data=json.dumps(resource),
         headers={'Content-Type': 'application/json',
-                 'Authorization': api_key})
+                 'Authorization': api_key},
+        verify=False
+        )
 
     check_response(r, url, 'CKAN')
 
@@ -228,7 +236,8 @@ def get_resource(resource_id, ckan_url, api_key):
     r = requests.post(url,
                       data=json.dumps({'id': resource_id}),
                       headers={'Content-Type': 'application/json',
-                               'Authorization': api_key}
+                               'Authorization': api_key},
+                      verify=False
                       )
     check_response(r, url, 'CKAN')
 
