@@ -11,6 +11,7 @@
 [DataPusher documentation]: http://docs.ckan.org/projects/datapusher
 [CKAN Service Provider]: https://github.com/ckan/ckan-service-provider
 [Messytables]: https://github.com/okfn/messytables
+[ssl_verification_disabled]: https://github.com/tanmaythakur/datapusher/tree/ssl_verification_disabled
 
 
 DataPusher
@@ -100,13 +101,13 @@ To release a new version of DataPusher:
    releasing.)
 
 
-   ## Error message when using self signed/ untrusted certificate
+## `certificate verify failed` when using self-signed/ untrusted certificate
 
-   If your CKAN instance is running on self signed/ untrusted certificate, 
-   you will see following error:
-   `SSLError: [Errno 1] _ssl.c:510: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed`
+If your CKAN instance is running on self signed/ untrusted certificate, 
+you will see following error:
+`SSLError: [Errno 1] _ssl.c:510: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed`
 
-   To temporary test such CKAN instance, use the `ssl_verification_disabled branch` instead of `master`.
-   [ssl_verification_disabled]: https://github.com/tanmaythakur/datapusher/tree/ssl_verification_disabled
+To test such CKAN instance temporary, use the `ssl_verification_disabled branch` instead of `master`.
+[ssl_verification_disabled][]
 
-   Be sure NOT to use this in production. 
+Be sure NOT to use this in production. 
