@@ -23,7 +23,7 @@ import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 from ckanserviceprovider import web
 
-# Tanmay - Added to disable InsecureRequestWarning
+# Added to disable InsecureRequestWarning
 # link: https://urllib3.readthedocs.org/en/latest/security.html#insecurerequestwarning
 requests.packages.urllib3.disable_warnings()
 
