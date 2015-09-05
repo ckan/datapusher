@@ -101,7 +101,7 @@ To release a new version of DataPusher:
    releasing.)
 
 
-## `certificate verify failed` when using self-signed/ untrusted certificate
+## Error :`certificate verify failed` when using self-signed/ untrusted certificate
 
 If your CKAN instance is running on self signed/ untrusted certificate, 
 you will see following error:
@@ -110,4 +110,6 @@ you will see following error:
 To test such CKAN instance temporary, use the `ssl_verification_disabled branch` instead of `master`.
 [ssl_verification_disabled][]
 
-Be sure NOT to use this in production. 
+Be sure NOT to use this branch in production. 
+
+Use master or stable branch for production environment. 
