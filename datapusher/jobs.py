@@ -282,6 +282,8 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     data = input['metadata']
 
+    logger.warning("Printing data: %s" % str(data))
+
     ckan_url = data['ckan_url']
     resource_id = data['resource_id']
     api_key = input.get('api_key')
