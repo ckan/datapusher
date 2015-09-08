@@ -107,9 +107,21 @@ If your CKAN instance is running on self signed/ untrusted certificate,
 you will see following error:
 `SSLError: [Errno 1] _ssl.c:510: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed`
 
-To test such CKAN instance temporary, use the `ssl_verification_disabled branch` instead of `master`.
-[ssl_verification_disabled][]
+You need to make following configuration changes.
 
-Be sure NOT to use this branch in production. 
 
-Use master or stable branch for production environment. 
+#### Configuration 
+SSL_VERIFY is a variable that controls SSL certificate verification.
+SSL_VERIFY is set to True by default for certificate verification. 
+
+You can change it to False to avoid `certificate verify failed` error in deployment/datapusher_settings.py. 
+
+Replace the old file with updated.
+`sudo cp deployment/datapusher_settings.py /etc/ckan/`
+
+Restart web server
+`sudo service apache2 restart` 
+
+Make sure to change it back to True in production environment. 
+
+

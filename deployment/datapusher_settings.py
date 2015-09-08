@@ -24,3 +24,6 @@ PORT = 8800
 
 #LOG_FILE = '/tmp/ckan_service.log'
 STDERR = True
+
+# Set this to False if you dont want SSL verification
+SSL_VERIFY = False

@@ -23,15 +23,17 @@ import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 from ckanserviceprovider import web
 
-# Added to disable InsecureRequestWarning
-# link: https://urllib3.readthedocs.org/en/latest/security.html#insecurerequestwarning
-requests.packages.urllib3.disable_warnings()
-
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
-CKAN_SITE_URL = dir(web.app.config)
+SSL_VERIFY = web.app.config.get('SSL_VERIFY') or True
+
+# Added to disable InsecureRequestWarning
+# link: https://urllib3.readthedocs.org/en/latest/security.html#insecurerequestwarning
+if not SSL_VERIFY:
+    requests.packages.urllib3.disable_warnings()
+
 DOWNLOAD_TIMEOUT = 30
 
 _TYPE_MAPPING = {
@@ -177,12 +179,20 @@ class DatastoreEncoder(json.JSONEncoder):
 def delete_datastore_resource(resource_id, api_key, ckan_url):
     try:
         delete_url = get_url('datastore_delete', ckan_url)
-        response = requests.post(delete_url,
+        if not SSL_VERIFY:
+            response = requests.post(delete_url,
+                                     data=json.dumps({'id': resource_id,
+                                                      'force': True}),
+                                     headers={'Content-Type': 'application/json',
+                                              'Authorization': api_key},
+                                     verify=False
+                                     )
+        else:
+            response = requests.post(delete_url,
                                  data=json.dumps({'id': resource_id,
                                                   'force': True}),
                                  headers={'Content-Type': 'application/json',
-                                          'Authorization': api_key},
-                                 verify=False
+                                          'Authorization': api_key}
                                  )
         check_response(response, delete_url, 'CKAN',
                        good_status=(201, 200, 404), ignore_no_success=True)
@@ -201,12 +211,19 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
 
     name = resource.get('name')
     url = get_url('datastore_create', ckan_url)
-    r = requests.post(url,
-                      data=json.dumps(request, cls=DatastoreEncoder),
-                      headers={'Content-Type': 'application/json',
-                               'Authorization': api_key},
-                      verify=False
-                      )
+    if not SSL_VERIFY:
+        r = requests.post(url,
+                          data=json.dumps(request, cls=DatastoreEncoder),
+                          headers={'Content-Type': 'application/json',
+                                   'Authorization': api_key},
+                          verify=False
+                          )
+    else:
+        r = requests.post(url,
+                          data=json.dumps(request, cls=DatastoreEncoder),
+                          headers={'Content-Type': 'application/json',
+                                   'Authorization': api_key}
+                          )
     check_response(r, url, 'CKAN DataStore')
 
 
@@ -218,12 +235,20 @@ def update_resource(resource, api_key, ckan_url):
     resource['url_type'] = 'datapusher'
 
     url = get_url('resource_update', ckan_url)
-    r = requests.post(
+    if not SSL_VERIFY:
+        r = requests.post(
+            url,
+            data=json.dumps(resource),
+            headers={'Content-Type': 'application/json',
+                     'Authorization': api_key},
+            verify=False
+            )
+    else:
+        r = requests.post(
         url,
         data=json.dumps(resource),
         headers={'Content-Type': 'application/json',
-                 'Authorization': api_key},
-        verify=False
+                 'Authorization': api_key}
         )
 
     check_response(r, url, 'CKAN')
@@ -234,11 +259,18 @@ def get_resource(resource_id, ckan_url, api_key):
     Gets available information about the resource from CKAN
     """
     url = get_url('resource_show', ckan_url)
-    r = requests.post(url,
+    if not SSL_VERIFY:
+        r = requests.post(url,
+                          data=json.dumps({'id': resource_id}),
+                          headers={'Content-Type': 'application/json',
+                                   'Authorization': api_key},
+                          verify=False
+                          )
+    else:
+        r = requests.post(url,
                       data=json.dumps({'id': resource_id}),
                       headers={'Content-Type': 'application/json',
-                               'Authorization': api_key},
-                      verify=False
+                               'Authorization': api_key}
                       )
     check_response(r, url, 'CKAN')
 
@@ -282,13 +314,12 @@ def push_to_datastore(task_id, input, dry_run=False):
     validate_input(input)
 
     data = input['metadata']
-
-    logger.info("Printing data: %s" % str(data))
-    logger.info("Printing ckan.site_url: %s" % str(CKAN_SITE_URL))
-
     ckan_url = data['ckan_url']
     resource_id = data['resource_id']
     api_key = input.get('api_key')
+
+    if not SSL_VERIFY:
+        logger.info('SSL_VERIFY is set to False. Not recommended in production.')
 
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
