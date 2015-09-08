@@ -31,7 +31,7 @@ if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
-CKAN_SITE_URL = web.app.config.get('ckan.site_url') or 'Tanmay'
+CKAN_SITE_URL = dir(web.app.config)
 DOWNLOAD_TIMEOUT = 30
 
 _TYPE_MAPPING = {
