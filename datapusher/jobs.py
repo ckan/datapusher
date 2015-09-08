@@ -31,6 +31,7 @@ if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
+CKAN_SITE_URL = web.app.config.get('ckan.site_url') or 'Tanmay'
 DOWNLOAD_TIMEOUT = 30
 
 _TYPE_MAPPING = {
@@ -282,7 +283,8 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     data = input['metadata']
 
-    logger.warning("Printing data: %s" % str(data))
+    logger.info("Printing data: %s" % str(data))
+    logger.info("Printing ckan.site_url: %s" % str(CKAN_SITE_URL))
 
     ckan_url = data['ckan_url']
     resource_id = data['resource_id']
