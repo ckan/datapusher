@@ -130,15 +130,23 @@ class TestCkanActionCalls(unittest.TestCase):
 
 
 class TestCheckResponse(unittest.TestCase):
+    """Unit tests for the check_response() function."""
+
     @httpretty.activate
-    @raises(util.JobError)
-    def test_text_409_with_broken_json(self):
-        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
+    def test_text_409_with_non_json_response(self):
+        """It should raise HTTPError for a 409 with a non-JSON body."""
+        url = 'http://www.ckan.org/'
+        httpretty.register_uri(httpretty.GET, url,
                                body=u"This is someone's text. With ümlauts.",
                                content_type='html/text',
                                status=409)
         r = requests.get('http://www.ckan.org/')
-        jobs.check_response(r, 'http://www.ckan.org/', 'Me')
+        try:
+            jobs.check_response(r, 'http://www.ckan.org/', 'Me')
+            assert False, "check_response() should have raised an exception."
+        except jobs.HTTPError as err:
+            assert err.status_code == 409
+            assert err.request_url == url
 
     @httpretty.activate
     def test_text_200(self):
@@ -150,14 +158,21 @@ class TestCheckResponse(unittest.TestCase):
         jobs.check_response(r, 'http://www.ckan.org/', 'Me')
 
     @httpretty.activate
-    @raises(util.JobError)
     def test_text_500_with_false_success(self):
-        httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
+        """It should raise HTTPError if given a 500 with "success": false."""
+        url = 'http://www.ckan.org/'
+        httpretty.register_uri(httpretty.GET, url,
                                body=u'{"success": false}',
                                content_type='html/text',
                                status=500)
         r = requests.get('http://www.ckan.org/')
-        jobs.check_response(r, 'http://www.ckan.org/', 'Me')
+        try:
+            jobs.check_response(r, url, 'Me')
+            assert False, "check_response() should have raised an exception"
+        except jobs.HTTPError as err:
+            assert err.response == '{"success": false}'
+            assert err.status_code == 500
+            assert err.request_url == url
 
     @httpretty.activate
     @raises(util.JobError)

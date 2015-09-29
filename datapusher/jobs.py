@@ -21,14 +21,15 @@ from slugify import slugify
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
+from ckanserviceprovider import web
 
 if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
-MAX_CONTENT_LENGTH = 10485760  # 10MB
+MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 DOWNLOAD_TIMEOUT = 30
 
-TYPE_MAPPING = {
+_TYPE_MAPPING = {
     'String': 'text',
     # 'int' may not be big enough,
     # and type detection may not realize it needs to be big
@@ -37,13 +38,62 @@ TYPE_MAPPING = {
     'DateUtil': 'timestamp'
 }
 
-TYPES = [messytables.StringType, messytables.DecimalType,
-         messytables.IntegerType, messytables.DateUtilType]
+_TYPES = [messytables.StringType, messytables.DecimalType,
+          messytables.IntegerType, messytables.DateUtilType]
+
+TYPE_MAPPING = web.app.config.get('TYPE_MAPPING', _TYPE_MAPPING)
+TYPES = web.app.config.get('TYPES', _TYPES)
 
 DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
+
+
+class HTTPError(util.JobError):
+    """Exception that's raised if a job fails due to an HTTP problem."""
+
+    def __init__(self, message, status_code, request_url, response):
+        """Initialise a new HTTPError.
+
+        :param message: A human-readable error message
+        :type message: string
+
+        :param status_code: The status code of the errored HTTP response,
+            e.g. 500
+        :type status_code: int
+
+        :param request_url: The URL that was requested
+        :type request_url: string
+
+        :param response: The body of the errored HTTP response as unicode
+            (if you have a requests.Response object then response.text will
+            give you this)
+        :type response: unicode
+
+        """
+        super(HTTPError, self).__init__(message)
+        self.status_code = status_code
+        self.request_url = request_url
+        self.response = response
+
+    def as_dict(self):
+        """Return a JSON-serializable dictionary representation of this error.
+
+        Suitable for ckanserviceprovider to return to the client site as the
+        value for the "error" key in the job dict.
+
+        """
+        if self.response and len(self.response) > 200:
+            response = self.response[:200] + '...'
+        else:
+            response = self.response
+        return {
+            "message": self.message,
+            "HTTP status code": self.status_code,
+            "Requested URL": self.request_url,
+            "Response": response,
+        }
 
 
 def get_url(action, ckan_url):
@@ -67,28 +117,31 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
 
     """
     if not response.status_code:
-        raise util.JobError('{who} bad response with no status code at: {url}'.format(
-            who=who,
-            url=request_url))
+        raise HTTPError(
+            'DataPusher received an HTTP response with no status code',
+            status_code=None, request_url=request_url, response=response.text)
 
-    message = '{who} bad response. Status code: {code} {reason}. At: {url}. Response: {resp}'
+    message = '{who} bad response. Status code: {code} {reason}. At: {url}.'
     try:
         if not response.status_code in good_status:
             json_response = response.json()
             if not ignore_no_success or json_response.get('success'):
-                raise util.JobError(message.format(
-                                    who=who,
-                                    code=response.status_code,
-                                    reason=response.reason,
-                                    url=request_url,
-                                    resp=pprint.pformat(json_response)))
-    except ValueError:
-        raise util.JobError(message.format(
-                            who=who,
-                            code=response.status_code,
-                            reason=response.reason,
-                            url=request_url,
-                            resp=response.text[:200]))
+                try:
+                    message = json_response["error"]["message"]
+                except Exception:
+                    message = message.format(
+                        who=who, code=response.status_code,
+                        reason=response.reason, url=request_url)
+                raise HTTPError(
+                    message, status_code=response.status_code,
+                    request_url=request_url, response=response.text)
+    except ValueError as err:
+        message = message.format(
+            who=who, code=response.status_code, reason=response.reason,
+            url=request_url, resp=response.text[:200])
+        raise HTTPError(
+            message, status_code=response.status_code, request_url=request_url,
+            response=response.text)
 
 
 def chunky(iterable, n):
@@ -199,11 +252,17 @@ def validate_input(input):
 
 @job.async
 def push_to_datastore(task_id, input, dry_run=False):
-    '''Show link to documentation.
+    '''Download and parse a resource push its data into CKAN's DataStore.
 
-    :param dry_run: Only fetch and parse the resource and return the results
-                    instead of storing it in the datastore (for testing)
+    An asynchronous job that gets a resource from CKAN, downloads the
+    resource's data file and, if the data file has changed since last time,
+    parses the data and posts it into CKAN's DataStore.
+
+    :param dry_run: Fetch and parse the data file but don't actually post the
+        data to the DataStore, instead return the data headers and rows that
+        would have been posted.
     :type dry_run: boolean
+
     '''
     handler = util.StoringHandler(task_id, input)
     logger = logging.getLogger(task_id)
@@ -237,12 +296,18 @@ def push_to_datastore(task_id, input, dry_run=False):
 
         response = urllib2.urlopen(request, timeout=DOWNLOAD_TIMEOUT)
     except urllib2.HTTPError as e:
-        raise util.JobError('Invalid HTTP response: %s' % e)
+        raise HTTPError(
+            "DataPusher received a bad HTTP response when trying to download "
+            "the data file", status_code=e.code,
+            request_url=resource.get('url'), response=e.read())
     except urllib2.URLError as e:
         if isinstance(e.reason, socket.timeout):
             raise util.JobError('Connection timed out after %ss' %
                                 DOWNLOAD_TIMEOUT)
-        raise
+        else:
+            raise HTTPError(
+                message=str(e.reason), status_code=None,
+                request_url=resource.get('url'), response=None)
 
     cl = response.info().getheader('content-length')
     if cl and int(cl) > MAX_CONTENT_LENGTH:
@@ -282,16 +347,17 @@ def push_to_datastore(task_id, input, dry_run=False):
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
     row_set.register_processor(messytables.types_processor(types))
 
-    headers = [header for header in headers if header]
+    headers = [header.strip() for header in headers if header.strip()]
     headers_set = set(headers)
 
     def row_iterator():
         for row in row_set:
             data_row = {}
             for index, cell in enumerate(row):
-                if cell.column not in headers_set:
+                column_name = cell.column.strip()
+                if column_name not in headers_set:
                     continue
-                data_row[cell.column] = cell.value
+                data_row[column_name] = cell.value
             yield data_row
     result = row_iterator()
 
