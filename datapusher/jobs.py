@@ -37,8 +37,7 @@ TYPE_MAPPING = {
     'DateUtil': 'timestamp'
 }
 
-TYPES = [messytables.StringType, messytables.DecimalType,
-         messytables.IntegerType, messytables.DateUtilType]
+TYPES = [messytables.StringType]
 
 DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
@@ -279,7 +278,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     offset, headers = messytables.headers_guess(row_set.sample)
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
-    types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
+    types = messytables.type_guess(row_set.sample, types=TYPES, strict=False)
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header for header in headers if header]
