@@ -275,7 +275,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         except:
             raise util.JobError(e)
 
-    row_set = table_set.tables.pop()
+    row_set = table_set.tables[0]
     offset, headers = messytables.headers_guess(row_set.sample)
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
