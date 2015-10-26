@@ -1,3 +1,6 @@
+# Use this file for development, on a production setup (eg a CKAN production
+# install) use deployment/datapusher.wsgi
+
 import ckanserviceprovider.web as web
 import datapusher.jobs as jobs
 
