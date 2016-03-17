@@ -68,6 +68,11 @@ class TestImport(unittest.TestCase):
                                body=u'{"success": true}',
                                content_type="application/json")
 
+        datastore_check_url = 'http://www.ckan.org/api/3/action/datastore_search'
+        httpretty.register_uri(httpretty.POST, datastore_check_url,
+                               body=json.dumps({'success': True}),
+                               content_type='application/json')
+
     @httpretty.activate
     def test_simple_csv(self):
         self.register_urls()

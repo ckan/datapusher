@@ -90,6 +90,15 @@ class TestImport(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, datastore_del_url,
                                body=json.dumps({'success': True}),
                                content_type='application/json')
+
+
+        # A URL that mocks checking if a datastore table exists
+        datastore_check_url = 'http://www.ckan.org/api/3/action/datastore_search'
+        httpretty.register_uri(httpretty.POST, datastore_check_url,
+                               body=json.dumps({'success': True}),
+                               content_type='application/json')
+
+
         return source_url, res_url
 
     @httpretty.activate
