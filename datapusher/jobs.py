@@ -342,6 +342,10 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     row_set = table_set.tables.pop()
     offset, headers = messytables.headers_guess(row_set.sample)
+
+    # Some headers might have been converted from strings to floats and such.
+    headers = [unicode(header) for header in headers]
+
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
