@@ -30,8 +30,8 @@ These instructions set up the |datapusher| webservice on Apache running on port
     sudo mkdir /usr/lib/ckan/datapusher/src
     cd /usr/lib/ckan/datapusher/src
 
-    #clone the source (always target the stable branch)
-    sudo git clone -b stable https://github.com/ckan/datapusher.git
+    #clone the source 
+    sudo git clone https://github.com/ckan/datapusher.git
 
     #install the DataPusher and its requirements
     cd datapusher
@@ -82,8 +82,8 @@ proxy requests to gunicorn.
     sudo mkdir /usr/lib/ckan/datapusher/src
     cd /usr/lib/ckan/datapusher/src
 
-    #clone the source (always target the stable branch)
-    sudo git clone -b stable https://github.com/ckan/datapusher.git
+    #clone the source
+    sudo git clone https://github.com/ckan/datapusher.git
 
     #install the DataPusher and its requirements
     cd datapusher
