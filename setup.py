@@ -14,7 +14,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # http://packaging.python.org/en/latest/tutorial.html#version
-    version='0.0.6',
+    version='0.0.8',
 
     description="A standalone web service that parses the contents of a CKAN site's data files and pushes them into its DataStore",
     long_description=long_description,

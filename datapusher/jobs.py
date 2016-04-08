@@ -184,6 +184,25 @@ def delete_datastore_resource(resource_id, api_key, ckan_url):
         raise util.JobError('Deleting existing datastore failed.')
 
 
+def datastore_resource_exists(resource_id, api_key, ckan_url):
+    try:
+        search_url = get_url('datastore_search', ckan_url)
+        response = requests.post(search_url,
+                                 params={'id': resource_id,
+                                         'limit': 0},
+                                 headers={'Content-Type': 'application/json',
+                                          'Authorization': api_key}
+                                 )
+        if response.status_code == 404:
+            return False
+        elif response.status_code == 200:
+            return True
+        else:
+            raise util.JobError('Error getting datastore resource.')
+    except requests.exceptions.RequestException:
+        raise util.JobError('Error getting datastore resource.')
+
+
 def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
     """
     Stores records in CKAN datastore
@@ -342,6 +361,10 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     row_set = table_set.tables.pop()
     offset, headers = messytables.headers_guess(row_set.sample)
+
+    # Some headers might have been converted from strings to floats and such.
+    headers = [unicode(header) for header in headers]
+
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
@@ -366,9 +389,10 @@ def push_to_datastore(task_id, input, dry_run=False):
     'datastore_create' will append to the existing datastore. And if
     the fields have significantly changed, it may also fail.
     '''
-    logger.info('Deleting "{res_id}" from datastore.'.format(
-        res_id=resource_id))
-    delete_datastore_resource(resource_id, api_key, ckan_url)
+    if datastore_resource_exists(resource_id, api_key, ckan_url):
+        logger.info('Deleting "{res_id}" from datastore.'.format(
+            res_id=resource_id))
+        delete_datastore_resource(resource_id, api_key, ckan_url)
 
     headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
                      for field in zip(headers, types)]

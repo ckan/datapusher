@@ -121,6 +121,20 @@ class TestCkanActionCalls(unittest.TestCase):
         assert json.loads(httpretty.last_request().body)['url_type'] == 'datapusher'
 
     @httpretty.activate
+    def test_datastore_resource_exists(self):
+        ckan_url = 'http://www.ckan.org'
+        url = '{0}/api/3/action/datastore_search'.format(ckan_url)
+        httpretty.register_uri(httpretty.POST, url,
+                               content_type="application/json",
+                               responses=[
+                                   httpretty.Response(body=u'{"success": true}', status=200),
+                                   httpretty.Response(body=u'{"success": false}', status=404),
+                               ])
+
+        assert jobs.datastore_resource_exists('found', 'api-key', ckan_url)
+        assert not jobs.datastore_resource_exists('not-found', 'api-key', ckan_url)
+
+    @httpretty.activate
     def test_send_resource_to_datastore(self):
         url = 'http://www.ckan.org/api/3/action/datastore_create'
         httpretty.register_uri(httpretty.POST, url,
