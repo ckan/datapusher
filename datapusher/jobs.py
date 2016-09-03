@@ -28,6 +28,8 @@ if not locale.getlocale()[0]:
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
+MAX_GET_RESOURCE_TRIES = web.app.config.get('MAX_GET_RESOURCE_TRIES') or 5
+SLEEP_BEFORE_GET_RESOURCE_RETRY_IN_SECONDS = web.app.config.get('SLEEP_BEFORE_GET_RESOURCE_RETRY_IN_SECONDS') or 5
 
 _TYPE_MAPPING = {
     'String': 'text',
@@ -296,12 +298,18 @@ def push_to_datastore(task_id, input, dry_run=False):
     resource_id = data['resource_id']
     api_key = input.get('api_key')
 
-    try:
-        resource = get_resource(resource_id, ckan_url, api_key)
-    except util.JobError, e:
-        #try again in 5 seconds just incase CKAN is slow at adding resource
-        time.sleep(5)
-        resource = get_resource(resource_id, ckan_url, api_key)
+    sleep_before_get_resource_retry_in_seconds = SLEEP_BEFORE_GET_RESOURCE_RETRY_IN_SECONDS
+
+    for try_index in range(1, MAX_GET_RESOURCE_TRIES + 1):
+        try:
+            resource = get_resource(resource_id, ckan_url, api_key)
+            break
+        except util.JobError, e:
+            if try_index >= MAX_GET_RESOURCE_TRIES:
+                raise
+
+            sleep(sleep_before_get_resource_retry_in_seconds)
+            sleep_before_get_resource_retry_in_seconds *= 2
 
     # fetch the resource data
     logger.info('Fetching from: {0}'.format(resource.get('url')))
