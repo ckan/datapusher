@@ -308,6 +308,17 @@ def push_to_datastore(task_id, input, dry_run=False):
             if try_index >= MAX_GET_RESOURCE_TRIES:
                 raise
 
+            logger.info(
+                'get_resource({}, {}) failed with error [{}]. ' \
+                'Retrying for {} more time(s) after {} seconds'.format(
+                    resource_id,
+                    ckan_url,
+                    e,
+                    (MAX_GET_RESOURCE_TRIES - try_index),
+                    sleep_before_get_resource_retry_in_seconds
+                )
+            )
+
             sleep(sleep_before_get_resource_retry_in_seconds)
             sleep_before_get_resource_retry_in_seconds *= 2
 
