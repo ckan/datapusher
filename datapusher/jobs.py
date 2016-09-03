@@ -309,17 +309,18 @@ def push_to_datastore(task_id, input, dry_run=False):
                 raise
 
             logger.info(
-                'get_resource({}, {}) failed with error [{}]. ' \
+                'get_resource({}, {}) failed with error type "{}" and message [{}]. ' \
                 'Retrying for {} more time(s) after {} seconds'.format(
                     resource_id,
                     ckan_url,
-                    e,
+                    type(e).__name__,
+                    unicode(e.message),
                     (MAX_GET_RESOURCE_TRIES - try_index),
                     sleep_before_get_resource_retry_in_seconds
                 )
             )
 
-            sleep(sleep_before_get_resource_retry_in_seconds)
+            time.sleep(sleep_before_get_resource_retry_in_seconds)
             sleep_before_get_resource_retry_in_seconds *= 2
 
     # fetch the resource data
