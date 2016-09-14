@@ -27,7 +27,7 @@ if not locale.getlocale()[0]:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
-DOWNLOAD_TIMEOUT = 30
+DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
 
 _TYPE_MAPPING = {
     'String': 'text',
