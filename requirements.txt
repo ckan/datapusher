@@ -3,3 +3,4 @@ messytables>=0.12.0
 python-slugify
 Requests
 argparse
+html5lib==0.9999999
