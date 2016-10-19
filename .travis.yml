@@ -4,7 +4,7 @@ python:
 install:
   - pip install -r requirements-dev.txt
   - pip install .
-  - pip install coveralls --use-mirrors
+  - pip install coveralls
 script: nosetests --with-coverage --cover-package=datapusher
 after_success:
   - coveralls
