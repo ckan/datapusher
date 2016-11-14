@@ -254,6 +254,20 @@ def get_resource(resource_id, ckan_url, api_key):
     return r.json()['result']
 
 
+def get_dataset(dataset_id, ckan_url, api_key):
+    """
+    Gets available information about the resource from CKAN
+    """
+    url = get_url('package_show', ckan_url)
+    r = requests.post(url,
+                      data=json.dumps({'id': dataset_id}),
+                      headers={'Content-Type': 'application/json',
+                               'Authorization': api_key}
+                      )
+    check_response(r, url, 'CKAN')
+
+    return r.json()['result']
+
 def validate_input(input):
     # Especially validate metdata which is provided by the user
     if not 'metadata' in input:
@@ -368,6 +382,15 @@ def push_to_datastore(task_id, input, dry_run=False):
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
+    overrides = web.app.config.get('TYPE_OVERRIDES')
+    if overrides:
+        dataset = get_dataset(resource['package_id'], ckan_url, api_key)
+        for override in overrides:
+            if dataset['name'] == override['dataset']:
+                for field_name, field_type in override['fields'].items():
+                    if field_name in headers:
+                        index = headers.index(field_name)
+                        types[index] = field_type()
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
