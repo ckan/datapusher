@@ -17,6 +17,7 @@ CKAN`_ and set up the `DataStore`_.
    ckan-config
    using
    debugging
+   type-override
 
 
 License
