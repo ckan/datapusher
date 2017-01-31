@@ -1,5 +1,5 @@
 ckanserviceprovider==0.0.5
-messytables>=0.12.0
+-e git://github.com/opendata-swiss/messytables.git#egg=messytables
 python-slugify
 Requests
 argparse
