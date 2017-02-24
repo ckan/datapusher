@@ -45,14 +45,15 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'DataPusher'
-copyright = u'2013, Open Knowledge Foundation'
+copyright = u'2017, Open Knowledge International'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# The short X.Y version.
-version = '1.0'
+import datapusher
+version = datapusher.__version__
+
 # The full version, including alpha/beta/rc tags.
 release = '1.0'
 
@@ -192,7 +193,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'datapusher.tex', u'datapusher Documentation',
-   u'Open Knowledge Foundation', 'manual'),
+   u'Open Knowledge International', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -222,7 +223,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'datapusher', u'datapusher Documentation',
-     [u'Open Knowledge Foundation'], 1)
+     [u'Open Knowledge International'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -236,7 +237,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'datapusher', u'datapusher Documentation',
-   u'Open Knowledge Foundation', 'datapusher', 'One line description of project.',
+   u'Open Knowledge International', 'datapusher', 'One line description of project.',
    'Miscellaneous'),
 ]
 
