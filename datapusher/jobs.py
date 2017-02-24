@@ -23,7 +23,10 @@ import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 from ckanserviceprovider import web
 
-if not locale.getlocale()[0]:
+if locale.getdefaultlocale()[0]:
+    lang, encoding = locale.getdefaultlocale()
+    locale.setlocale(locale.LC_ALL, '{0}.{1}'.format(lang, encoding))
+else:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
