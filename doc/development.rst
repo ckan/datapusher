@@ -3,7 +3,7 @@ Development installation
 
 Install the required packages::
 
-    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev zlib1g-dev git
 
 Get the code::
 
