@@ -302,6 +302,11 @@ def push_to_datastore(task_id, input, dry_run=False):
         #try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
+        
+    # check if the resource url_type is a datastore
+    if resource.get('url_type') == 'datastore':
+        logger.info('Dump files are managed with the Datastore API')
+        return
 
     # fetch the resource data
     logger.info('Fetching from: {0}'.format(resource.get('url')))
