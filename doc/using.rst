@@ -51,3 +51,12 @@ You can specify the types to use with the following settings in your datapusher_
 
 
 .. _Messytables: https://messytables.readthedocs.org/en/latest/
+
+Configuring SSL verification
+----------------------------
+
+By default the ``datapusher`` will verify that a valid SSL certificate is in
+place on every request it does. You can switch the verification off if needed
+by setting SSL_VERIFY to False in datapusher_settings.py
+
+    SSL_VERIFY = False
