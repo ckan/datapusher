@@ -106,6 +106,9 @@ class HTTPError(util.JobError):
             "Response": response,
         }
 
+    def __str__(self):
+        return self.message
+
 
 def get_url(action, ckan_url):
     """
