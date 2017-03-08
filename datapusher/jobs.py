@@ -218,8 +218,9 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
                 'Error getting datastore resource.',
                 response.status_code, search_url, reponse,
             )
-    except requests.exceptions.RequestException:
-        raise util.JobError('Error getting datastore resource.')
+    except requests.exceptions.RequestException as e:
+        raise util.JobError(
+            'Error getting datastore resource ({!s}).'.format(e))
 
 
 def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
