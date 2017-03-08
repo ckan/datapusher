@@ -214,7 +214,10 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         elif response.status_code == 200:
             return True
         else:
-            raise util.JobError('Error getting datastore resource.')
+            raise HTTPError(
+                'Error getting datastore resource.',
+                response.status_code, search_url, reponse,
+            )
     except requests.exceptions.RequestException:
         raise util.JobError('Error getting datastore resource.')
 
