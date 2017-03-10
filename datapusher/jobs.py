@@ -212,7 +212,7 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         if response.status_code == 404:
             return False
         elif response.status_code == 200:
-            return response.json()['result']
+            return response.json().get('result', {'fields': []})
         else:
             raise HTTPError(
                 'Error getting datastore resource.',
@@ -430,7 +430,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     # Maintain data dictionaries from matching column names
     if existing:
         existing_info = dict((f['id'], f['info'])
-            for f in existing['fields'] if 'info' in f)
+            for f in existing.get('fields', []) if 'info' in f)
         for h in headers_dicts:
             if h['id'] in existing_info:
                 h['info'] = existing_info[h['id']]
