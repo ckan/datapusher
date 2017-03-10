@@ -106,6 +106,9 @@ class HTTPError(util.JobError):
             "Response": response,
         }
 
+    def __str__(self):
+        return self.message
+
 
 def get_url(action, ckan_url):
     """
@@ -211,9 +214,13 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         elif response.status_code == 200:
             return True
         else:
-            raise util.JobError('Error getting datastore resource.')
-    except requests.exceptions.RequestException:
-        raise util.JobError('Error getting datastore resource.')
+            raise HTTPError(
+                'Error getting datastore resource.',
+                response.status_code, search_url, reponse,
+            )
+    except requests.exceptions.RequestException as e:
+        raise util.JobError(
+            'Error getting datastore resource ({!s}).'.format(e))
 
 
 def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
