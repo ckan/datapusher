@@ -107,7 +107,9 @@ class HTTPError(util.JobError):
         }
 
     def __str__(self):
-        return self.message
+        return u'{} status={} url={} response={}'.format(
+            self.message, self.status_code, self.request_url, self.response) \
+            .encode('ascii', 'replace')
 
 
 def get_url(action, ckan_url):
