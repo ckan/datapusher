@@ -391,6 +391,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                     if field_name in headers:
                         index = headers.index(field_name)
                         types[index] = field_type()
+                break
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
