@@ -214,7 +214,7 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         if response.status_code == 404:
             return False
         elif response.status_code == 200:
-            return True
+            return response.json().get('result', {'fields': []})
         else:
             raise HTTPError(
                 'Error getting datastore resource.',
@@ -420,13 +420,22 @@ def push_to_datastore(task_id, input, dry_run=False):
     'datastore_create' will append to the existing datastore. And if
     the fields have significantly changed, it may also fail.
     '''
-    if datastore_resource_exists(resource_id, api_key, ckan_url):
+    existing = datastore_resource_exists(resource_id, api_key, ckan_url)
+    if existing:
         logger.info('Deleting "{res_id}" from datastore.'.format(
             res_id=resource_id))
         delete_datastore_resource(resource_id, api_key, ckan_url)
 
     headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
                      for field in zip(headers, types)]
+
+    # Maintain data dictionaries from matching column names
+    if existing:
+        existing_info = dict((f['id'], f['info'])
+            for f in existing.get('fields', []) if 'info' in f)
+        for h in headers_dicts:
+            if h['id'] in existing_info:
+                h['info'] = existing_info[h['id']]
 
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
