@@ -356,13 +356,14 @@ class TestImport(unittest.TestCase):
     @raises(util.JobError)
     @httpretty.activate
     def test_bad_url(self):
-        """It should raise HTTPError(JobError) if the resource.url is bad
+        """It should raise HTTPError(JobError) if the resource.url is badly
+        formed.
 
         (ckanserviceprovider will catch this exception and return an error to
         the client).
 
         """
-        self.register_urls(source_url='http://doesnt-exist')
+        self.register_urls(source_url='http://url-badly-formed')
         data = {
             'api_key': self.api_key,
             'job_type': 'push_to_datastore',
