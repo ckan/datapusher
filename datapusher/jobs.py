@@ -225,16 +225,15 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
             'Error getting datastore resource ({!s}).'.format(e))
 
 
-def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
+def send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url):
     """
     Stores records in CKAN datastore
     """
-    request = {'resource_id': resource['id'],
+    request = {'resource_id': resource_id,
                'fields': headers,
                'force': True,
                'records': records}
 
-    name = resource.get('name')
     url = get_url('datastore_create', ckan_url)
     r = requests.post(url,
                       verify=SSL_VERIFY,
@@ -328,10 +327,11 @@ def push_to_datastore(task_id, input, dry_run=False):
         #try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
-        
+
     # check if the resource url_type is a datastore
     if resource.get('url_type') == 'datastore':
-        logger.info('Dump files are managed with the Datastore API')
+        logger.info('Ignoring resource - url_type=datasetore - dump files are '
+                    'managed with the Datastore API')
         return
 
     # fetch the resource data
@@ -363,7 +363,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     if cl and int(cl) > MAX_CONTENT_LENGTH:
         raise util.JobError(
             'Resource too large to download: {cl} > max ({max_cl}).'.format(
-            cl=cl, max_cl=MAX_CONTENT_LENGTH))
+                cl=cl, max_cl=MAX_CONTENT_LENGTH))
 
     ct = response.info().getheader('content-type').split(';', 1)[0]
 
@@ -373,8 +373,8 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     if (resource.get('hash') == file_hash
             and not data.get('ignore_hash')):
-        logger.info("The file hash hasn't changed: {hash}.".format(
-            hash=file_hash))
+        logger.info('Ignoring resource - the file hash hasn\'t changed: '
+                    '{hash}.'.format(hash=file_hash))
         return
 
     resource['hash'] = file_hash
@@ -382,12 +382,13 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         table_set = messytables.any_tableset(f, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
-        ## try again with format
+        # try again with format
         f.seek(0)
         try:
             format = resource.get('format')
-            table_set = messytables.any_tableset(f, mimetype=format, extension=format)
-        except:
+            table_set = messytables.any_tableset(f, mimetype=format,
+                                                 extension=format)
+        except Exception:
             raise util.JobError(e)
 
     row_set = table_set.tables.pop()
@@ -402,26 +403,12 @@ def push_to_datastore(task_id, input, dry_run=False):
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
-    headers_set = set(headers)
 
-    def row_iterator():
-        for row in row_set:
-            data_row = {}
-            for index, cell in enumerate(row):
-                column_name = cell.column.strip()
-                if column_name not in headers_set:
-                    continue
-                data_row[column_name] = cell.value
-            yield data_row
-    result = row_iterator()
-
-    '''
-    Delete existing datstore resource before proceeding. Otherwise
-    'datastore_create' will append to the existing datastore. And if
-    the fields have significantly changed, it may also fail.
-    '''
+    # Delete existing datstore resource before proceeding. Otherwise
+    # 'datastore_create' will append to the existing datastore. And if
+    # the fields have significantly changed, it may also fail.
     existing = datastore_resource_exists(resource_id, api_key, ckan_url)
-    if existing:
+    if existing and not dry_run:
         logger.info('Deleting "{res_id}" from datastore.'.format(
             res_id=resource_id))
         delete_datastore_resource(resource_id, api_key, ckan_url)
@@ -431,7 +418,8 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # Maintain data dictionaries from matching column names
     if existing:
-        existing_info = dict((f['id'], f['info'])
+        existing_info = dict(
+            (f['id'], f['info'])
             for f in existing.get('fields', []) if 'info' in f)
         for h in headers_dicts:
             if h['id'] in existing_info:
@@ -440,18 +428,38 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
 
+    ret = convert_and_load_data(
+        resource['id'], row_set, headers, headers_dicts,
+        ckan_url, api_key, dry_run, logger)
     if dry_run:
-        return headers_dicts, result
+        return ret
+
+    if data.get('set_url_type', False):
+        update_resource(resource, api_key, ckan_url)
+
+
+def convert_and_load_data(resource_id, data_rows, headers, headers_dicts,
+                          ckan_url, api_key, dry_run, logger):
+    def row_iterator():
+        for row in data_rows:
+            data_row = {}
+            for index, cell in enumerate(row):
+                column_name = cell.column.strip()
+                if column_name not in headers:
+                    continue
+                data_row[column_name] = cell.value
+            yield data_row
+    row_dicts = row_iterator()
+
+    if dry_run:
+        return headers_dicts, row_dicts
 
     count = 0
-    for i, records in enumerate(chunky(result, 250)):
+    for i, records in enumerate(chunky(row_dicts, 250)):
         count += len(records)
         logger.info('Saving chunk {number}'.format(number=i))
-        send_resource_to_datastore(resource, headers_dicts,
+        send_resource_to_datastore(resource_id, headers_dicts,
                                    records, api_key, ckan_url)
 
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
         n=count, res_id=resource_id))
-
-    if data.get('set_url_type', False):
-        update_resource(resource, api_key, ckan_url)
