@@ -35,11 +35,11 @@ From the command-line
 
 Resubmit all resources to datapusher, although it will skip files whose hash of the data file has not changed::
 
-    paster --plugin=ckan datapusher resubmit -c $CKAN_INI
+    paster --plugin=ckan datapusher resubmit -c /etc/ckan/default/ckan.ini
 
 Resubmit a specific resource, whether or not the hash of the data file has changed::
 
-    paster --plugin=ckan datapusher submit <pkgname>
+    paster --plugin=ckan datapusher submit <pkgname> -c /etc/ckan/default/ckan.ini
 
 
 Configuring the maximum upload size
