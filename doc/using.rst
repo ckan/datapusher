@@ -5,11 +5,15 @@ The |datapusher| will work without any more configuration as long as the
 ``datapusher`` (or ``datapusherext`` for version 2.1) plugin is installed and
 added to the ckan config file.
 
+Triggering pushes
+-----------------
+
 Any file that has a format of csv or xls will be attempted to be loaded
-into to datastore.
+into to DataStore. This is triggered when a new URL is added to a dataset
+(resource). You can also manually trigger resources to be resubmitted.
 
 CKAN 2.2 and above
-------------------
+~~~~~~~~~~~~~~~~~~
 
 When editing a resource in CKAN (clicking the "Manage" button on a resource
 page), a new tab will appear named "Resource Data".
@@ -20,11 +24,22 @@ to retry to upload.
 
 
 CKAN 2.1
---------
+~~~~~~~~
 
 If you want to retry an upload go into the resource edit form in CKAN and
 just click the "Update" button to resubmit the resource metadata.
 This will retrigger an upload.
+
+From the command-line
+~~~~~~~~~~~~~~~~~~~~~
+
+Resubmit all resources to datapusher, although it will skip files whose hash of the data file has not changed::
+
+    paster --plugin=ckan datapusher resubmit -c $CKAN_INI
+
+Resubmit a specific resource, whether or not the hash of the data file has changed::
+
+    paster --plugin=ckan datapusher submit <pkgname>
 
 
 Configuring the maximum upload size
