@@ -15,9 +15,10 @@ import decimal
 import hashlib
 import cStringIO
 import time
+import tempfile
+import subprocess
 
 import messytables
-from slugify import slugify
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -31,6 +32,7 @@ else:
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 DOWNLOAD_TIMEOUT = 30
+DROP_INDEXES = web.app.config.get('DROP_INDEXES', True)
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0']:
     SSL_VERIFY = False
@@ -246,7 +248,8 @@ def send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url)
 
 def update_resource(resource, api_key, ckan_url):
     """
-    Update webstore_url and webstore_last_updated in CKAN
+    Update the given CKAN resource to say that it has been stored in datastore
+    ok.
     """
 
     resource['url_type'] = 'datapusher'
@@ -330,7 +333,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # check if the resource url_type is a datastore
     if resource.get('url_type') == 'datastore':
-        logger.info('Ignoring resource - url_type=datasetore - dump files are '
+        logger.info('Ignoring resource - url_type=datastore - dump files are '
                     'managed with the Datastore API')
         return
 
@@ -392,29 +395,37 @@ def push_to_datastore(task_id, input, dry_run=False):
             raise util.JobError(e)
 
     row_set = table_set.tables.pop()
-    offset, headers = messytables.headers_guess(row_set.sample)
+    csv_dialect = row_set._dialect()
+    header_offset, headers = messytables.headers_guess(row_set.sample)
 
     # Some headers might have been converted from strings to floats and such.
     headers = [unicode(header) for header in headers]
 
     row_set.register_processor(messytables.headers_processor(headers))
-    row_set.register_processor(messytables.offset_processor(offset + 1))
+    row_set.register_processor(messytables.offset_processor(header_offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
+    headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
+                     for field in zip(headers, types)]
 
-    # Delete existing datstore resource before proceeding. Otherwise
+    # Delete existing datastore resource before proceeding. Otherwise
     # 'datastore_create' will append to the existing datastore. And if
     # the fields have significantly changed, it may also fail.
     existing = datastore_resource_exists(resource_id, api_key, ckan_url)
-    if existing and not dry_run:
-        logger.info('Deleting "{res_id}" from datastore.'.format(
-            res_id=resource_id))
-        delete_datastore_resource(resource_id, api_key, ckan_url)
-
-    headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
-                     for field in zip(headers, types)]
+    if existing:
+        if not dry_run:
+            logger.info('Deleting "{res_id}" from datastore.'.format(
+                res_id=resource_id))
+            delete_datastore_resource(resource_id, api_key, ckan_url)
+    else:
+        # Create datastore table
+        logger.info('Creating datastore table for resource: %s',
+                    resource['id'])
+        # create it by calling update with 0 records
+        send_resource_to_datastore(resource['id'], headers_dicts,
+                                   [], api_key, ckan_url)
 
     # Maintain data dictionaries from matching column names
     if existing:
@@ -428,18 +439,95 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
 
-    ret = convert_and_load_data(
-        resource['id'], row_set, headers, headers_dicts,
-        ckan_url, api_key, dry_run, logger)
-    if dry_run:
-        return ret
+    if web.app.config.get('USE_PGLOADER', True):
+        f.seek(0)
+        # TODO rather than tempfile, pipe in the data:
+        # http://stackoverflow.com/questions/163542/python-how-do-i-pass-a-string-into-subprocess-popen-using-the-stdin-argument
+        with tempfile.NamedTemporaryFile() as saved_file:
+            saved_file.write(f.read())
+            saved_file.flush()
+            csv_filepath = saved_file.name
+            skip_header_rows = header_offset + 1
+            load_data_with_pgloader(
+                resource['id'], csv_filepath, headers, skip_header_rows,
+                csv_dialect, ckan_url, api_key, dry_run, logger)
+    else:
+        ret = convert_and_load_data(
+            resource['id'], row_set, headers, headers_dicts,
+            ckan_url, api_key, dry_run, logger)
+        if dry_run:
+            return ret
 
     if data.get('set_url_type', False):
         update_resource(resource, api_key, ckan_url)
 
 
+def load_data_with_pgloader(resource_id, csv_filepath, headers,
+                            skip_header_rows, csv_dialect,
+                            ckan_url, api_key, dry_run, logger):
+    datastore_postgres_url = web.app.config.get('CKAN_DATASTORE_WRITE_URL')
+    pgloader_command_file_buffer = get_csv_pgloader_command_file_buffer(
+        datastore_postgres_url, resource_id,
+        csv_filepath, headers, skip_header_rows, csv_dialect)
+
+    pgloader_options_filepath = '/tmp/pgloader_options'
+    with open(pgloader_options_filepath, 'w') as f:
+        f.write(pgloader_command_file_buffer)
+    logger.info('pgloader command file:\n%s', pgloader_command_file_buffer)
+    cmd = ['pgloader', pgloader_options_filepath]
+    logger.info('pgloader command-line: %s', ' '.join(cmd))
+    result = subprocess.check_output(cmd)
+    pgloader_logger = logger.error if 'ERROR' in result else logger.info
+    pgloader_logger('pgloader result: %s', result)
+
+def get_csv_pgloader_command_file_buffer(
+        postgres_url, table_name,
+        csv_filepath, header_names, skip_header_rows, csv_dialect):
+    postgres_table_param = '?tablename={}'.format(table_name)
+    # We need to call identifier to double quote the field names, since
+    # that makes them case sensitive, as was done when creating the columns
+    fields = ','.join(identifier(field_name)
+                      for field_name in header_names)
+    options = '''
+    LOAD CSV
+         FROM '{filepath}'
+             HAVING FIELDS ({fields})
+         INTO {postgres_url}
+             TARGET COLUMNS ({target_fields})
+
+    WITH skip header = {skip_header},
+         batch rows = 10000,
+         {drop_indexes}
+         quote identifiers,
+         fields terminated by '{delimiter}',
+         fields optionally enclosed by '{quote_char}',
+         lines terminated by '{line_terminator}'
+    ;'''.format(
+        filepath=csv_filepath,
+        fields=fields,
+        postgres_url=postgres_url + postgres_table_param,
+        target_fields=fields,
+        skip_header=skip_header_rows,
+        drop_indexes='drop indexes,' if DROP_INDEXES else '',
+        delimiter=csv_dialect.delimiter,
+        quote_char=csv_dialect.quotechar,
+        line_terminator=csv_dialect.lineterminator,
+        )
+    return options
+
+def identifier(s):
+    """
+    Return s as a quoted postgres identifier.
+    Copied from ckan.datastore.helpers
+    """
+    return u'"' + s.replace(u'"', u'""').replace(u'\0', '') + u'"'
+
 def convert_and_load_data(resource_id, data_rows, headers, headers_dicts,
                           ckan_url, api_key, dry_run, logger):
+    '''DEPRECATED in favour of pgloader.
+    Converts the data to JSON and then pushes it in chunks of 250 rows to
+    datastore.
+    '''
     def row_iterator():
         for row in data_rows:
             data_row = {}

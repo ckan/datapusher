@@ -45,7 +45,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'DataPusher'
-copyright = u'2017, Open Knowledge International'
+copyright = u'(c) 2017 Open Knowledge International and contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
