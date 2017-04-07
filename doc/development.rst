@@ -5,6 +5,8 @@ Install the required packages::
 
     sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev zlib1g-dev git
 
+Install pgloader - see: :doc:`pgloader`
+
 Get the code::
 
     git clone https://github.com/ckan/datapusher
@@ -12,7 +14,7 @@ Get the code::
 
 Install the dependencies::
 
-    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
     pip install -e .
 
 Run the DataPusher::

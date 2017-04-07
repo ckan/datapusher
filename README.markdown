@@ -48,13 +48,7 @@ see [github.com/ckan/datapusher/contributors](https://github.com/ckan/datapusher
 
 ## Development
 
-To install DataPusher for development:
-
-```bash
-git clone https://github.com/ckan/datapusher.git
-cd datapusher
-pip install -r requirements-dev.txt
-```
+To install DataPusher for development, see [Development installation](doc/development.rst)
 
 To run the tests:
 

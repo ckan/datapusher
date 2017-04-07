@@ -15,9 +15,15 @@ import decimal
 import hashlib
 import cStringIO
 import time
+import tempfile
+import subprocess
+from threading import Timer
+import re
+from random import randint
+import glob
+import os
 
 import messytables
-from slugify import slugify
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -31,6 +37,7 @@ else:
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 DOWNLOAD_TIMEOUT = 30
+DROP_INDEXES = web.app.config.get('DROP_INDEXES', True)
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0']:
     SSL_VERIFY = False
@@ -225,16 +232,15 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
             'Error getting datastore resource ({!s}).'.format(e))
 
 
-def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
+def send_resource_to_datastore(resource_id, headers, records, api_key, ckan_url):
     """
     Stores records in CKAN datastore
     """
-    request = {'resource_id': resource['id'],
+    request = {'resource_id': resource_id,
                'fields': headers,
                'force': True,
                'records': records}
 
-    name = resource.get('name')
     url = get_url('datastore_create', ckan_url)
     r = requests.post(url,
                       verify=SSL_VERIFY,
@@ -247,7 +253,8 @@ def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
 
 def update_resource(resource, api_key, ckan_url):
     """
-    Update webstore_url and webstore_last_updated in CKAN
+    Update the given CKAN resource to say that it has been stored in datastore
+    ok.
     """
 
     resource['url_type'] = 'datapusher'
@@ -311,7 +318,8 @@ def push_to_datastore(task_id, input, dry_run=False):
     '''
     handler = util.StoringHandler(task_id, input)
     logger = logging.getLogger(task_id)
-    logger.addHandler(handler)
+    logger.addHandler(handler)  # saves logs to the db
+    logger.addHandler(logging.StreamHandler())  # also show them on stderr
     logger.setLevel(logging.DEBUG)
 
     validate_input(input)
@@ -325,13 +333,14 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
     except util.JobError, e:
-        #try again in 5 seconds just incase CKAN is slow at adding resource
+        # try again in 5 seconds just in case CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
-        
+
     # check if the resource url_type is a datastore
     if resource.get('url_type') == 'datastore':
-        logger.info('Dump files are managed with the Datastore API')
+        logger.info('Ignoring resource - url_type=datastore - dump files are '
+                    'managed with the Datastore API')
         return
 
     # fetch the resource data
@@ -363,7 +372,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     if cl and int(cl) > MAX_CONTENT_LENGTH:
         raise util.JobError(
             'Resource too large to download: {cl} > max ({max_cl}).'.format(
-            cl=cl, max_cl=MAX_CONTENT_LENGTH))
+                cl=cl, max_cl=MAX_CONTENT_LENGTH))
 
     ct = response.info().getheader('content-type').split(';', 1)[0]
 
@@ -373,8 +382,8 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     if (resource.get('hash') == file_hash
             and not data.get('ignore_hash')):
-        logger.info("The file hash hasn't changed: {hash}.".format(
-            hash=file_hash))
+        logger.info('Ignoring resource - the file hash hasn\'t changed: '
+                    '{hash}.'.format(hash=file_hash))
         return
 
     resource['hash'] = file_hash
@@ -382,56 +391,58 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         table_set = messytables.any_tableset(f, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
-        ## try again with format
+        # try again with format
         f.seek(0)
         try:
             format = resource.get('format')
-            table_set = messytables.any_tableset(f, mimetype=format, extension=format)
-        except:
+            table_set = messytables.any_tableset(f, mimetype=format,
+                                                 extension=format)
+        except Exception:
             raise util.JobError(e)
 
     row_set = table_set.tables.pop()
-    offset, headers = messytables.headers_guess(row_set.sample)
+    header_offset, headers = messytables.headers_guess(row_set.sample)
 
     # Some headers might have been converted from strings to floats and such.
     headers = [unicode(header) for header in headers]
 
+    # Setup the converters that run when you iterate over the row_set.
+    # With pgloader only the headers will be iterated over.
     row_set.register_processor(messytables.headers_processor(headers))
-    row_set.register_processor(messytables.offset_processor(offset + 1))
+    row_set.register_processor(
+        messytables.offset_processor(header_offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
-    row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
-    headers_set = set(headers)
-
-    def row_iterator():
-        for row in row_set:
-            data_row = {}
-            for index, cell in enumerate(row):
-                column_name = cell.column.strip()
-                if column_name not in headers_set:
-                    continue
-                data_row[column_name] = cell.value
-            yield data_row
-    result = row_iterator()
-
-    '''
-    Delete existing datstore resource before proceeding. Otherwise
-    'datastore_create' will append to the existing datastore. And if
-    the fields have significantly changed, it may also fail.
-    '''
-    existing = datastore_resource_exists(resource_id, api_key, ckan_url)
-    if existing:
-        logger.info('Deleting "{res_id}" from datastore.'.format(
-            res_id=resource_id))
-        delete_datastore_resource(resource_id, api_key, ckan_url)
-
     headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
                      for field in zip(headers, types)]
 
+    # pgloader only handles csv
+    use_pgloader = web.app.config.get('USE_PGLOADER', True) and \
+        isinstance(row_set, messytables.CSVRowSet)
+
+    # Delete existing datastore resource before proceeding. Otherwise
+    # 'datastore_create' will append to the existing datastore. And if
+    # the fields have significantly changed, it may also fail.
+    existing = datastore_resource_exists(resource_id, api_key, ckan_url)
+    if existing:
+        if not dry_run:
+            logger.info('Deleting "{res_id}" from datastore.'.format(
+                res_id=resource_id))
+            delete_datastore_resource(resource_id, api_key, ckan_url)
+    elif use_pgloader:
+        # Create datastore table - pgloader needs this
+        logger.info('Creating datastore table for resource: %s',
+                    resource['id'])
+        # create it by calling update with 0 records
+        send_resource_to_datastore(resource['id'], headers_dicts,
+                                   [], api_key, ckan_url)
+        # it also sets "datastore_active=True" on the resource
+
     # Maintain data dictionaries from matching column names
     if existing:
-        existing_info = dict((f['id'], f['info'])
+        existing_info = dict(
+            (f['id'], f['info'])
             for f in existing.get('fields', []) if 'info' in f)
         for h in headers_dicts:
             if h['id'] in existing_info:
@@ -440,18 +451,313 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
 
+    if use_pgloader:
+        csv_dialect = row_set._dialect()
+        f.seek(0)
+        # Save CSV to a file
+        # TODO rather than save it, pipe in the data:
+        # http://stackoverflow.com/questions/163542/python-how-do-i-pass-a-string-into-subprocess-popen-using-the-stdin-argument
+        # then it won't be all in memory at once.
+        with tempfile.NamedTemporaryFile() as saved_file:
+            # csv_buffer = f.read()
+            # pgloader doesn't detect encoding. Use chardet then. It is easier
+            # to reencode it as UTF8 than convert the name of the encoding to
+            # one that pgloader will understand.
+            csv_decoder = messytables.commas.UTF8Recoder(f, encoding=None)
+            csv_unicode = csv_decoder.reader.read()
+            csv_buffer = csv_unicode.encode('utf8')
+            # pgloader only allows a single character line terminator. See:
+            # https://github.com/dimitri/pgloader/issues/508#issuecomment-275878600
+            # However we can't use that solution because the last column may
+            # not be of type text. Therefore change the line endings before
+            # giving it to pgloader.
+            if len(csv_dialect.lineterminator) > 1:
+                csv_buffer = csv_buffer.replace(
+                    csv_dialect.lineterminator, b'\n')
+                csv_dialect.lineterminator = b'\n'
+            saved_file.write(csv_buffer)
+            saved_file.flush()
+            csv_filepath = saved_file.name
+            skip_header_rows = header_offset + 1
+            load_data_with_pgloader(
+                resource['id'], csv_filepath, headers, skip_header_rows,
+                csv_dialect, ckan_url, api_key, dry_run, logger)
+    else:
+        row_set.register_processor(messytables.types_processor(types))
+
+        ret = convert_and_load_data(
+            resource['id'], row_set, headers, headers_dicts,
+            ckan_url, api_key, dry_run, logger)
+        if dry_run:
+            return ret
+
+    if data.get('set_url_type', False):
+        update_resource(resource, api_key, ckan_url)
+
+
+def load_data_with_pgloader(resource_id, csv_filepath, headers,
+                            skip_header_rows, csv_dialect,
+                            ckan_url, api_key, dry_run, logger):
+    datastore_postgres_url = web.app.config.get('CKAN_DATASTORE_WRITE_URL')
+    if not datastore_postgres_url:
+        raise util.JobError(
+            'You need to configure a value for: CKAN_DATASTORE_WRITE_URL')
+    pgloader_command_file_buffer = get_csv_pgloader_command_file_buffer(
+        datastore_postgres_url, resource_id,
+        csv_filepath, headers, skip_header_rows, csv_dialect)
+
+    pgloader_options_filepath = '/tmp/pgloader_options'
+    with open(pgloader_options_filepath, 'w') as f:
+        f.write(pgloader_command_file_buffer)
+    logger.info('pgloader command file:\n%s', pgloader_command_file_buffer)
+    cmd = ['pgloader']
+    # specify a unique pgloader_log_dir so it isn't confused with other runs
+    # of it, which may be concurrent
+    pgloader_log_dir = '/tmp/pgloader/{}'.format(randint(1000, 100000))
+    cmd.extend(['--root-dir', pgloader_log_dir])
+    cmd.append(pgloader_options_filepath)
+    logger.info('pgloader command-line: %s', ' '.join(cmd))
+
+    # run pgloader itself
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            universal_newlines=True)
+
+    # read stdout as it is produced, so we can keep track
+    log_messages = PgLoaderLogMessages(logger)
+    for stdout_line in iter(proc.stdout.readline, ''):
+        log_messages.add_line(stdout_line)
+        if 'ERROR' in stdout_line or 'FATAL' in stdout_line:
+            # pgloader is liable to hang after errors. So get any remaining
+            # lines and if it doesn't finish within a timeout, kill it.
+            timer = Timer(1, lambda p: p.kill(), [proc])
+            try:
+                timer.start()
+                for stdout_line in iter(proc.stdout.readline, ''):
+                    log_messages.add_line(stdout_line)
+            finally:
+                timer.cancel()
+            proc.stdout.close()
+            proc.kill()
+            logger.error('pgloader killed, following the error.')
+            break
+    else:
+        # pgloader finished naturally
+        proc.stdout.close()
+        return_code = proc.wait()
+        if return_code:
+            log_messages.log_current_message()
+            if not log_messages.errored:
+                # pgloader didn't print an error, so we need to
+                logger.error('pgloader exited with error code: %s',
+                             return_code)
+    log_messages.log_current_message()
+
+    # look at the pgloader log files for a clear list of rejected rows
+    log_files = []
+    for folder, subs, files in os.walk(pgloader_log_dir):
+        for file in files:
+            if file.endswith('.log') and file != 'pgloader.log':
+                log_files.append(os.path.join(folder, file))
+    if len(log_files) != 1:
+        logger.error('Expected 1 pgloader log file with rejected rows, '
+                     'but instead found: %s', len(log_files))
+    for log_file in log_files:
+        with open(log_file) as f:
+            rejected = parse_pgloader_rejected_rows_log(f, logger,
+                                                        skip_header_rows)
+        if rejected['num_rows']:
+            logger.error('%s rows were rejected: %s '
+                         'The errors related to these columns: %s',
+                         rejected['num_rows'],
+                         ', '.join(str(row) for row in rejected['rows'][:5]) +
+                         ' etc.' if len(rejected['rows']) > 5 else '',
+                         ', '.join(rejected['cols']))
+
+    # look at the report summary
+    for msg in log_messages.all_messages[::-1]:
+        if msg.startswith('Total import time'):
+            # Total import time   6    6    0   0.256s   0.003s  0.004s
+            match = re.match(
+                '^Total import time\s+'
+                '(?P<read>\d+)\s+(?P<imported>\d+)\s+(?P<errors>\d+)\s+'
+                '(?P<total_time>[0-9.]+)s\s+(?P<read_time>[0-9.]+)s\s+'
+                '(?P<write_time>[0-9.]+)s$', msg)
+            if not match:
+                logger.error('Could not parse pgloader summary: %s', msg)
+    else:
+        logger.error('pgloader summary not found - this happens after errors '
+                     'and it gets killed. Rather than '
+                     'leave only a small fraction of the data in DataStore, '
+                     'remove it all.')
+        logger.info('Deleting "{res_id}" from datastore.'.format(
+                    res_id=resource_id))
+        delete_datastore_resource(resource_id, api_key, ckan_url)
+
+
+def parse_pgloader_rejected_rows_log(f, logger, skip_header_rows):
+    '''
+    e.g.
+    Database error 22P02: invalid input syntax for type numeric: "6,200.00"
+    CONTEXT: COPY foo-bar-42, line 5, column Grand Total: "6,200.00"
+    Database error 22P02: invalid input syntax for type numeric: "1,500.00"
+    CONTEXT: COPY foo-bar-42, line 3, column Grand Total: "1,500.00"
+    '''
+    state = 'Database error'
+    result = dict(row_details=[], rows=[], cols=set())
+    line_num = 1  # start row numbering at 1, just like Excel
+    line_num += skip_header_rows - 1
+    for line in f.readlines():
+        line = line.strip()
+        if not line:
+            continue
+        if state == 'Database error':
+            match = re.match('Database error [^:]+: (.+)', line)
+            row_error = ''
+            if not match:
+                logger.error('Could not parse log of rejected rows line: %s',
+                             line.strip())
+            else:
+                row_error = match.groups()[0]
+            state = 'context'
+        elif state == 'context':
+            match = re.match('CONTEXT: .+, line (\d+), column (.+): .+', line)
+            # NB the line number is relative to the previous error, because the
+            # line number comes from the response to postgres COPY, and after
+            # an error, pgloader resubmits the data after the error line.
+            if not match:
+                logger.error('Could not parse log of rejected rows context '
+                             'line: %s', line.strip())
+            else:
+                rel_line_num, column = match.groups()
+                line_num += int(rel_line_num)
+                result['row_details'].append(
+                    (int(line_num), column, row_error))
+                result['rows'].append(line_num)
+                result['cols'].add(column)
+            state = 'Database error'
+        else:
+            logger.error('Parsing of rejected rows log invalid state: %s',
+                         state)
+            break
+    result['num_rows'] = len(result['rows'])
+    result['num_cols'] = len(result['cols'])
+    result['rows'] = result['rows']
+    result['row_details'] = result['row_details']
+    return result
+
+def get_csv_pgloader_command_file_buffer(
+        postgres_url, table_name,
+        csv_filepath, header_names, skip_header_rows, csv_dialect):
+    postgres_table_param = '?tablename={}'.format(table_name)
+    # We need to call identifier to double quote the field names, since
+    # that makes them case sensitive, as was done when creating the columns
+    fields = ','.join(identifier(field_name)
+                      for field_name in header_names)
+    # convert '\n' -> '0x0a'
+    line_terminator = '0x' + csv_dialect.lineterminator.encode('hex')
+    options = '''
+    LOAD CSV
+         FROM '{filepath}'
+             HAVING FIELDS ({fields})
+         INTO {postgres_url}
+             TARGET COLUMNS ({target_fields})
+
+    WITH skip header = {skip_header},
+         batch rows = 10000,
+         {drop_indexes}
+         quote identifiers,
+         fields terminated by '{delimiter}',
+         fields optionally enclosed by '{quote_char}',
+         lines terminated by '{line_terminator}'
+    ;'''.format(
+        filepath=csv_filepath,
+        fields=fields,
+        postgres_url=postgres_url + postgres_table_param,
+        target_fields=fields,
+        skip_header=skip_header_rows,
+        drop_indexes='drop indexes,' if DROP_INDEXES else '',
+        delimiter=csv_dialect.delimiter,
+        quote_char=csv_dialect.quotechar,
+        line_terminator=line_terminator,
+        )
+    return options
+
+def identifier(s):
+    """
+    Return s as a quoted postgres identifier.
+    Copied from ckan.datastore.helpers
+    """
+    return u'"' + s.replace(u'"', u'""').replace(u'\0', '') + u'"'
+
+class PgLoaderLogMessages(object):
+    '''Given lines of pgloader's output, it stitches multi-line log
+    messages together and logs them as you go.
+    '''
+    def __init__(self, logger):
+        self.current_message = 'pgloader output:\n'
+        self.errored = False
+        self.all_messages = []
+        self.logger = logger
+
+    def add_line(self, line):
+        # 2017-04-06T11:19:44.045000Z LOG Main logs in ...
+        log_msg_match = re.match(r'^[0-9-:T.]+Z (.+)$',
+                                 line)
+        if log_msg_match:
+            # this is the start of a new log message
+            # which means the end of the previous message
+            if self.current_message:
+                self.log_current_message()
+            # strip off the timestamp
+            line = log_msg_match.groups()[0]
+            line = line.lstrip('LOG ')  # but keep other levels eg errors
+        self.current_message += line
+
+    def log_current_message(self):
+        if self.current_message:
+            errored = 'ERROR' in self.current_message \
+                or 'FATAL' in self.current_message
+            self.errored |= errored
+            log_function = self.logger.error \
+                if errored else self.logger.info
+            self.current_message = self.current_message.strip()  # remove \n
+            log_function(self.current_message)
+            self.all_messages.append(self.current_message)
+            self.current_message = ''
+
+def convert_and_load_data(resource_id, data_rows, headers, headers_dicts,
+                          ckan_url, api_key, dry_run, logger):
+    '''DEPRECATED in favour of pgloader, although currently still needed for
+    XLS files.
+
+    Converts the data to JSON and then pushes it in chunks of 250 rows to
+    datastore.
+    '''
+    def row_iterator():
+        unknown_columns = set()
+        for row in data_rows:
+            data_row = {}
+            for cell in row:
+                column_name = cell.column.strip()
+                if column_name not in headers and \
+                        column_name not in unknown_columns:
+                    logger.warn('Dropping data from cell of unknown column %s',
+                                column_name)
+                    unknown_columns.add(column_name)
+                    continue
+                data_row[column_name] = cell.value
+            yield data_row
+    row_dicts = row_iterator()
+
     if dry_run:
-        return headers_dicts, result
+        return headers_dicts, row_dicts
 
     count = 0
-    for i, records in enumerate(chunky(result, 250)):
+    for i, records in enumerate(chunky(row_dicts, 250)):
         count += len(records)
         logger.info('Saving chunk {number}'.format(number=i))
-        send_resource_to_datastore(resource, headers_dicts,
+        send_resource_to_datastore(resource_id, headers_dicts,
                                    records, api_key, ckan_url)
 
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
         n=count, res_id=resource_id))
-
-    if data.get('set_url_type', False):
-        update_resource(resource, api_key, ckan_url)
