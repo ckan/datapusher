@@ -21,7 +21,7 @@ These instructions set up the |datapusher| webservice on Apache running on port
    .. parsed-literal::
 
     #install requirements for the DataPusher
-    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev zlib1g-dev git
 
     #install pgloader
     # See: :doc:`pgloader`
@@ -78,7 +78,7 @@ proxy requests to gunicorn.
    .. parsed-literal::
 
     #install requirements for the DataPusher
-    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git
+    sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev zlib1g-dev git
 
     #install pgloader
     # See: `pgloader`_

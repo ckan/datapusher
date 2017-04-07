@@ -17,6 +17,11 @@ import cStringIO
 import time
 import tempfile
 import subprocess
+from threading import Timer
+import re
+from random import randint
+import glob
+import os
 
 import messytables
 
@@ -313,7 +318,8 @@ def push_to_datastore(task_id, input, dry_run=False):
     '''
     handler = util.StoringHandler(task_id, input)
     logger = logging.getLogger(task_id)
-    logger.addHandler(handler)
+    logger.addHandler(handler)  # saves logs to the db
+    logger.addHandler(logging.StreamHandler())  # also show them on stderr
     logger.setLevel(logging.DEBUG)
 
     validate_input(input)
@@ -327,7 +333,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
     except util.JobError, e:
-        #try again in 5 seconds just incase CKAN is slow at adding resource
+        # try again in 5 seconds just in case CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
 
@@ -395,20 +401,25 @@ def push_to_datastore(task_id, input, dry_run=False):
             raise util.JobError(e)
 
     row_set = table_set.tables.pop()
-    csv_dialect = row_set._dialect()
     header_offset, headers = messytables.headers_guess(row_set.sample)
 
     # Some headers might have been converted from strings to floats and such.
     headers = [unicode(header) for header in headers]
 
+    # Setup the converters that run when you iterate over the row_set.
+    # With pgloader only the headers will be iterated over.
     row_set.register_processor(messytables.headers_processor(headers))
-    row_set.register_processor(messytables.offset_processor(header_offset + 1))
+    row_set.register_processor(
+        messytables.offset_processor(header_offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
-    row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
     headers_dicts = [dict(id=field[0], type=TYPE_MAPPING[str(field[1])])
                      for field in zip(headers, types)]
+
+    # pgloader only handles csv
+    use_pgloader = web.app.config.get('USE_PGLOADER', True) and \
+        isinstance(row_set, messytables.CSVRowSet)
 
     # Delete existing datastore resource before proceeding. Otherwise
     # 'datastore_create' will append to the existing datastore. And if
@@ -419,13 +430,14 @@ def push_to_datastore(task_id, input, dry_run=False):
             logger.info('Deleting "{res_id}" from datastore.'.format(
                 res_id=resource_id))
             delete_datastore_resource(resource_id, api_key, ckan_url)
-    else:
-        # Create datastore table
+    elif use_pgloader:
+        # Create datastore table - pgloader needs this
         logger.info('Creating datastore table for resource: %s',
                     resource['id'])
         # create it by calling update with 0 records
         send_resource_to_datastore(resource['id'], headers_dicts,
                                    [], api_key, ckan_url)
+        # it also sets "datastore_active=True" on the resource
 
     # Maintain data dictionaries from matching column names
     if existing:
@@ -439,12 +451,31 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
 
-    if web.app.config.get('USE_PGLOADER', True):
+    if use_pgloader:
+        csv_dialect = row_set._dialect()
         f.seek(0)
-        # TODO rather than tempfile, pipe in the data:
+        # Save CSV to a file
+        # TODO rather than save it, pipe in the data:
         # http://stackoverflow.com/questions/163542/python-how-do-i-pass-a-string-into-subprocess-popen-using-the-stdin-argument
+        # then it won't be all in memory at once.
         with tempfile.NamedTemporaryFile() as saved_file:
-            saved_file.write(f.read())
+            # csv_buffer = f.read()
+            # pgloader doesn't detect encoding. Use chardet then. It is easier
+            # to reencode it as UTF8 than convert the name of the encoding to
+            # one that pgloader will understand.
+            csv_decoder = messytables.commas.UTF8Recoder(f, encoding=None)
+            csv_unicode = csv_decoder.reader.read()
+            csv_buffer = csv_unicode.encode('utf8')
+            # pgloader only allows a single character line terminator. See:
+            # https://github.com/dimitri/pgloader/issues/508#issuecomment-275878600
+            # However we can't use that solution because the last column may
+            # not be of type text. Therefore change the line endings before
+            # giving it to pgloader.
+            if len(csv_dialect.lineterminator) > 1:
+                csv_buffer = csv_buffer.replace(
+                    csv_dialect.lineterminator, b'\n')
+                csv_dialect.lineterminator = b'\n'
+            saved_file.write(csv_buffer)
             saved_file.flush()
             csv_filepath = saved_file.name
             skip_header_rows = header_offset + 1
@@ -452,6 +483,8 @@ def push_to_datastore(task_id, input, dry_run=False):
                 resource['id'], csv_filepath, headers, skip_header_rows,
                 csv_dialect, ckan_url, api_key, dry_run, logger)
     else:
+        row_set.register_processor(messytables.types_processor(types))
+
         ret = convert_and_load_data(
             resource['id'], row_set, headers, headers_dicts,
             ckan_url, api_key, dry_run, logger)
@@ -466,6 +499,9 @@ def load_data_with_pgloader(resource_id, csv_filepath, headers,
                             skip_header_rows, csv_dialect,
                             ckan_url, api_key, dry_run, logger):
     datastore_postgres_url = web.app.config.get('CKAN_DATASTORE_WRITE_URL')
+    if not datastore_postgres_url:
+        raise util.JobError(
+            'You need to configure a value for: CKAN_DATASTORE_WRITE_URL')
     pgloader_command_file_buffer = get_csv_pgloader_command_file_buffer(
         datastore_postgres_url, resource_id,
         csv_filepath, headers, skip_header_rows, csv_dialect)
@@ -474,11 +510,140 @@ def load_data_with_pgloader(resource_id, csv_filepath, headers,
     with open(pgloader_options_filepath, 'w') as f:
         f.write(pgloader_command_file_buffer)
     logger.info('pgloader command file:\n%s', pgloader_command_file_buffer)
-    cmd = ['pgloader', pgloader_options_filepath]
+    cmd = ['pgloader']
+    # specify a unique pgloader_log_dir so it isn't confused with other runs
+    # of it, which may be concurrent
+    pgloader_log_dir = '/tmp/pgloader/{}'.format(randint(1000, 100000))
+    cmd.extend(['--root-dir', pgloader_log_dir])
+    cmd.append(pgloader_options_filepath)
     logger.info('pgloader command-line: %s', ' '.join(cmd))
-    result = subprocess.check_output(cmd)
-    pgloader_logger = logger.error if 'ERROR' in result else logger.info
-    pgloader_logger('pgloader result: %s', result)
+
+    # run pgloader itself
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            universal_newlines=True)
+
+    # read stdout as it is produced, so we can keep track
+    log_messages = PgLoaderLogMessages(logger)
+    for stdout_line in iter(proc.stdout.readline, ''):
+        log_messages.add_line(stdout_line)
+        if 'ERROR' in stdout_line or 'FATAL' in stdout_line:
+            # pgloader is liable to hang after errors. So get any remaining
+            # lines and if it doesn't finish within a timeout, kill it.
+            timer = Timer(1, lambda p: p.kill(), [proc])
+            try:
+                timer.start()
+                for stdout_line in iter(proc.stdout.readline, ''):
+                    log_messages.add_line(stdout_line)
+            finally:
+                timer.cancel()
+            proc.stdout.close()
+            proc.kill()
+            logger.error('pgloader killed, following the error.')
+            break
+    else:
+        # pgloader finished naturally
+        proc.stdout.close()
+        return_code = proc.wait()
+        if return_code:
+            log_messages.log_current_message()
+            if not log_messages.errored:
+                # pgloader didn't print an error, so we need to
+                logger.error('pgloader exited with error code: %s',
+                             return_code)
+    log_messages.log_current_message()
+
+    # look at the pgloader log files for a clear list of rejected rows
+    log_files = []
+    for folder, subs, files in os.walk(pgloader_log_dir):
+        for file in files:
+            if file.endswith('.log') and file != 'pgloader.log':
+                log_files.append(os.path.join(folder, file))
+    if len(log_files) != 1:
+        logger.error('Expected 1 pgloader log file with rejected rows, '
+                     'but instead found: %s', len(log_files))
+    for log_file in log_files:
+        with open(log_file) as f:
+            rejected = parse_pgloader_rejected_rows_log(f, logger,
+                                                        skip_header_rows)
+        if rejected['num_rows']:
+            logger.error('%s rows were rejected: %s '
+                         'The errors related to these columns: %s',
+                         rejected['num_rows'],
+                         ', '.join(str(row) for row in rejected['rows'][:5]) +
+                         ' etc.' if len(rejected['rows']) > 5 else '',
+                         ', '.join(rejected['cols']))
+
+    # look at the report summary
+    for msg in log_messages.all_messages[::-1]:
+        if msg.startswith('Total import time'):
+            # Total import time   6    6    0   0.256s   0.003s  0.004s
+            match = re.match(
+                '^Total import time\s+'
+                '(?P<read>\d+)\s+(?P<imported>\d+)\s+(?P<errors>\d+)\s+'
+                '(?P<total_time>[0-9.]+)s\s+(?P<read_time>[0-9.]+)s\s+'
+                '(?P<write_time>[0-9.]+)s$', msg)
+            if not match:
+                logger.error('Could not parse pgloader summary: %s', msg)
+    else:
+        logger.error('pgloader summary not found - this happens after errors '
+                     'and it gets killed. Rather than '
+                     'leave only a small fraction of the data in DataStore, '
+                     'remove it all.')
+        logger.info('Deleting "{res_id}" from datastore.'.format(
+                    res_id=resource_id))
+        delete_datastore_resource(resource_id, api_key, ckan_url)
+
+
+def parse_pgloader_rejected_rows_log(f, logger, skip_header_rows):
+    '''
+    e.g.
+    Database error 22P02: invalid input syntax for type numeric: "6,200.00"
+    CONTEXT: COPY foo-bar-42, line 5, column Grand Total: "6,200.00"
+    Database error 22P02: invalid input syntax for type numeric: "1,500.00"
+    CONTEXT: COPY foo-bar-42, line 3, column Grand Total: "1,500.00"
+    '''
+    state = 'Database error'
+    result = dict(row_details=[], rows=[], cols=set())
+    line_num = 1  # start row numbering at 1, just like Excel
+    line_num += skip_header_rows - 1
+    for line in f.readlines():
+        line = line.strip()
+        if not line:
+            continue
+        if state == 'Database error':
+            match = re.match('Database error [^:]+: (.+)', line)
+            row_error = ''
+            if not match:
+                logger.error('Could not parse log of rejected rows line: %s',
+                             line.strip())
+            else:
+                row_error = match.groups()[0]
+            state = 'context'
+        elif state == 'context':
+            match = re.match('CONTEXT: .+, line (\d+), column (.+): .+', line)
+            # NB the line number is relative to the previous error, because the
+            # line number comes from the response to postgres COPY, and after
+            # an error, pgloader resubmits the data after the error line.
+            if not match:
+                logger.error('Could not parse log of rejected rows context '
+                             'line: %s', line.strip())
+            else:
+                rel_line_num, column = match.groups()
+                line_num += int(rel_line_num)
+                result['row_details'].append(
+                    (int(line_num), column, row_error))
+                result['rows'].append(line_num)
+                result['cols'].add(column)
+            state = 'Database error'
+        else:
+            logger.error('Parsing of rejected rows log invalid state: %s',
+                         state)
+            break
+    result['num_rows'] = len(result['rows'])
+    result['num_cols'] = len(result['cols'])
+    result['rows'] = result['rows']
+    result['row_details'] = result['row_details']
+    return result
 
 def get_csv_pgloader_command_file_buffer(
         postgres_url, table_name,
@@ -488,6 +653,8 @@ def get_csv_pgloader_command_file_buffer(
     # that makes them case sensitive, as was done when creating the columns
     fields = ','.join(identifier(field_name)
                       for field_name in header_names)
+    # convert '\n' -> '0x0a'
+    line_terminator = '0x' + csv_dialect.lineterminator.encode('hex')
     options = '''
     LOAD CSV
          FROM '{filepath}'
@@ -511,7 +678,7 @@ def get_csv_pgloader_command_file_buffer(
         drop_indexes='drop indexes,' if DROP_INDEXES else '',
         delimiter=csv_dialect.delimiter,
         quote_char=csv_dialect.quotechar,
-        line_terminator=csv_dialect.lineterminator,
+        line_terminator=line_terminator,
         )
     return options
 
@@ -522,18 +689,61 @@ def identifier(s):
     """
     return u'"' + s.replace(u'"', u'""').replace(u'\0', '') + u'"'
 
+class PgLoaderLogMessages(object):
+    '''Given lines of pgloader's output, it stitches multi-line log
+    messages together and logs them as you go.
+    '''
+    def __init__(self, logger):
+        self.current_message = 'pgloader output:\n'
+        self.errored = False
+        self.all_messages = []
+        self.logger = logger
+
+    def add_line(self, line):
+        # 2017-04-06T11:19:44.045000Z LOG Main logs in ...
+        log_msg_match = re.match(r'^[0-9-:T.]+Z (.+)$',
+                                 line)
+        if log_msg_match:
+            # this is the start of a new log message
+            # which means the end of the previous message
+            if self.current_message:
+                self.log_current_message()
+            # strip off the timestamp
+            line = log_msg_match.groups()[0]
+            line = line.lstrip('LOG ')  # but keep other levels eg errors
+        self.current_message += line
+
+    def log_current_message(self):
+        if self.current_message:
+            errored = 'ERROR' in self.current_message \
+                or 'FATAL' in self.current_message
+            self.errored |= errored
+            log_function = self.logger.error \
+                if errored else self.logger.info
+            self.current_message = self.current_message.strip()  # remove \n
+            log_function(self.current_message)
+            self.all_messages.append(self.current_message)
+            self.current_message = ''
+
 def convert_and_load_data(resource_id, data_rows, headers, headers_dicts,
                           ckan_url, api_key, dry_run, logger):
-    '''DEPRECATED in favour of pgloader.
+    '''DEPRECATED in favour of pgloader, although currently still needed for
+    XLS files.
+
     Converts the data to JSON and then pushes it in chunks of 250 rows to
     datastore.
     '''
     def row_iterator():
+        unknown_columns = set()
         for row in data_rows:
             data_row = {}
-            for index, cell in enumerate(row):
+            for cell in row:
                 column_name = cell.column.strip()
-                if column_name not in headers:
+                if column_name not in headers and \
+                        column_name not in unknown_columns:
+                    logger.warn('Dropping data from cell of unknown column %s',
+                                column_name)
+                    unknown_columns.add(column_name)
                     continue
                 data_row[column_name] = cell.value
             yield data_row

@@ -84,9 +84,15 @@ If you have installed pgloader version 3.0 to 3.3.e2bc7e4 (i.e. not as new as 3.
 
     DROP_INDEXES = False
 
+If you leave this option True and use an older pgloader then it will fail with an error like::
+
+     ERROR Database error 42601: syntax error at or near ".40e7"
+     QUERY: DROP INDEX IF EXISTS public.40e7e6d8b60115dbc276bec5b8b05f0f433d3adf;
+
+
 Avoiding pgloader
 ~~~~~~~~~~~~~~~~~
 
-If you wish to avoid using pgloader and revert to the legacy 'convert and load in chunks' code, sacrificing the pgloader speed improvements (3x or 30x if you drop indexes), then you can still do that by changing this option::
+If you wish to avoid using pgloader and revert to the legacy 'convert and load in chunks' code, sacrificing the pgloader speed improvements (3x or 30x if you drop indexes), and with the knowledge that it is deprecated and will be removed in a future version of datapusher, then you can still do that by changing this option to this value::
 
     USE_PGLOADER = False

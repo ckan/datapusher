@@ -6,6 +6,7 @@ Test individual functions
 import json
 import unittest
 import requests
+from cStringIO import StringIO
 
 from nose.tools import assert_equal, raises
 
@@ -206,3 +207,38 @@ class TestCheckResponse(unittest.TestCase):
                                status=404)
         r = requests.get('http://www.ckan.org/')
         jobs.check_response(r, 'http://www.ckan.org/', 'Me', good_status=(200, 201, 404))
+
+
+class Logger:
+    def error(self, msg, *args):
+        print msg % args
+logger = Logger()
+
+class TestParsePgloaderRejectedRowsLog(unittest.TestCase):
+    def test_one(self):
+        log = '''
+Database error 22P02: invalid input syntax for type numeric: "6,200.00"
+CONTEXT: COPY foo-bar-42, line 5, column Grand Total: "6,200.00"
+'''
+        result = jobs.parse_pgloader_rejected_rows_log(StringIO(log), logger)
+        assert_equal(
+            result['row_details'],
+            [(5, 'Grand Total',
+              'invalid input syntax for type numeric: "6,200.00"')])
+        assert_equal(result['rows'], [5])
+        assert_equal(result['cols'], set(('Grand Total',)))
+
+    def test_simple(self):
+        log = '''
+Database error 22P02: invalid input syntax for type numeric: "6,200.00"
+CONTEXT: COPY foo-bar-42, line 5, column Grand Total: "6,200.00"
+Database error 22P02: invalid input syntax for type numeric: "1,500.00"
+CONTEXT: COPY foo-bar-42, line 3, column Grand Total: "1,500.00"
+Database error 22P02: invalid input syntax for type numeric: "1,950.00"
+CONTEXT: COPY foo-bar-42, line 1, column Grand Total: "1,950.00"
+Database error 22P02: invalid input syntax for type numeric: "1,767.70"
+CONTEXT: COPY foo-bar-42, line 2, column Grand Total: "1,767.70"'''
+        result = jobs.parse_pgloader_rejected_rows_log(StringIO(log), logger)
+        assert_equal(result['num_rows'], 4)
+        assert_equal(result['num_cols'], 1)
+        assert_equal(result['rows'], [5, 8, 9, 11])

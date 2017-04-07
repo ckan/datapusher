@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Test fetching and parsing various tabular data files.
+"""Test DEPRECATED "convert_and_load" of tabular data files
+(i.e. not using pgloader)
 
 This just tests the push_to_datastore job's fetching and parsing of the files,
 it does not actually test pushing the data into the datastore.
@@ -21,6 +22,10 @@ import httpretty
 import datapusher.main as main
 import datapusher.jobs as jobs
 import ckanserviceprovider.util as util
+from ckanserviceprovider import web
+
+
+web.app.config['USE_PGLOADER'] = False
 
 os.environ['JOB_CONFIG'] = os.path.join(os.path.dirname(__file__),
                                         'settings_test.py')
@@ -100,40 +105,6 @@ class TestImport(unittest.TestCase):
 
 
         return source_url, res_url
-
-    @httpretty.activate
-    @raises(util.JobError)
-    def test_too_large_file(self):
-        """It should raise JobError if the data file is too large.
-
-        If the data file is larger than MAX_CONTENT_LENGTH then the async
-        background job push_to_datastore should raise JobError
-        (ckanserviceprovider will catch this exception and return an error to
-        the client).
-
-        """
-        self.register_urls()
-        data = {
-            'api_key': self.api_key,
-            'job_type': 'push_to_datastore',
-            'metadata': {
-                'ckan_url': 'http://%s/' % self.host,
-                'resource_id': self.resource_id
-            }
-        }
-
-        # Override the source_url (already mocked by self.register_urls()
-        # above) with another mock response, this one mocks a response body
-        # that's bigger than MAX_CONTENT_LENGTH.
-        source_url = 'http://www.source.org/static/file'
-        size = jobs.MAX_CONTENT_LENGTH + 1
-        httpretty.register_uri(
-            httpretty.GET, source_url,
-            body='a' * size,
-            content_length=size,
-            content_type='application/json')
-
-        jobs.push_to_datastore('fake_id', data, True)
 
     # FIXME: Docstring
     @httpretty.activate
@@ -400,45 +371,3 @@ class TestImport(unittest.TestCase):
         assert_equal(len(headers), 1)
         assert_equal(len(results), 4000)
 
-    @httpretty.activate
-    def test_do_not_push_when_same_hash(self):
-        """A file should not be pushed if it hasn't changed.
-
-        If a resource's file has already been added to the datastore and then
-        the datapusher's push_to_datastore job fetchess and parses it again
-        and the file has not changed, then push_to_datastore should return
-        None rather than parsing the file and returning headers and rows.
-
-        FIXME:
-        This relies on a return statement early in the push_to_datastore
-        function, this doesn't seem like a great way to test that the file
-        was not pushed.
-
-        """
-        source_url, res_url = self.register_urls()
-        httpretty.register_uri(
-            httpretty.POST, res_url,
-            body=json.dumps({
-                'success': True,
-                'result': {
-                    'id': '32h4345k34h5l345',
-                    'name': 'short name',
-                    'url': source_url,
-                    'format': 'csv',
-                    'hash': '0ccb75d277ec2da41faae58642e3fb11'
-                }
-            }),
-            content_type='application/json')
-        data = {
-            'api_key': self.api_key,
-            'job_type': 'push_to_datastore',
-            'metadata': {
-                'ckan_url': 'http://%s/' % self.host,
-                'resource_id': self.resource_id
-            }
-        }
-
-        res = jobs.push_to_datastore('fake_id', data, True)
-        # res should be None because we didn't get to the part that
-        # returns something
-        assert not res, res

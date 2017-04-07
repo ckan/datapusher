@@ -18,16 +18,17 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/job_store.db'
 CKAN_DATASTORE_WRITE_URL = \
     'postgresql://ckan_default:pass@localhost/datastore_default'
 
-# Dropping indexes significantly speeds up pgloader. However it requires
-# pgloader version 3.3.0219f55 or later. Otherwise you will see error:
-#     syntax error at or near ".40e7"
-
-DROP_INDEXES = True
-
 # webserver host and port
 
 HOST = '0.0.0.0'
 PORT = 8800
+
+# Use pgloader or the legacy 'convert and load in chunks' code
+USE_PGLOADER = True
+
+# Dropping indexes significantly speeds up pgloader (approx 10x). However it
+# requires pgloader version 3.3.0219f55 or later.
+DROP_INDEXES = True
 
 # logging
 
