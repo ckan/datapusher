@@ -1,0 +1,5 @@
+datapusher:
+  build: .
+  hostname: datapusher
+  ports:
+    - "8800:8800"
