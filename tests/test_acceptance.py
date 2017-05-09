@@ -44,7 +44,8 @@ class TestImport(unittest.TestCase):
         cls.resource_id = 'foo-bar-42'
 
     def register_urls(self, filename='simple.csv', format='CSV',
-                      content_type='application/csv'):
+                      content_type='application/csv',
+                      source_url='http://www.source.org/static/file'):
         """Mock some test URLs with httpretty.
 
         Mocks some URLs related to a data file and a CKAN resource that
@@ -56,10 +57,10 @@ class TestImport(unittest.TestCase):
 
         """
         # A URL that just returns a static file (simple.csv by default).
-        source_url = 'http://www.source.org/static/file'
-        httpretty.register_uri(httpretty.GET, source_url,
-                               body=get_static_file(filename),
-                               content_type=content_type)
+        if source_url:
+            httpretty.register_uri(httpretty.GET, source_url,
+                                   body=get_static_file(filename),
+                                   content_type=content_type)
 
         # A URL that mocks CKAN's resource_show API.
         res_url = 'http://www.ckan.org/api/3/action/resource_show'
@@ -351,6 +352,28 @@ class TestImport(unittest.TestCase):
         assert_equal(len(results), 82)
         assert_equal(headers[0]['id'].strip(), u'1985')
         assert_equal(results[1]['1993'].strip(), u'379')
+
+    @raises(util.JobError)
+    @httpretty.activate
+    def test_bad_url(self):
+        """It should raise HTTPError(JobError) if the resource.url is badly
+        formed.
+
+        (ckanserviceprovider will catch this exception and return an error to
+        the client).
+
+        """
+        self.register_urls(source_url='http://url-badly-formed')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        jobs.push_to_datastore('fake_id', data, True)
 
     @httpretty.activate
     def test_mostly_numbers(self):
