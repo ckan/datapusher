@@ -436,6 +436,10 @@ def push_to_datastore(task_id, input, dry_run=False):
         for h in headers_dicts:
             if h['id'] in existing_info:
                 h['info'] = existing_info[h['id']]
+                # create columns with types user requested
+                type_override = existing_info[h['id']].get('type_override')
+                if type_override in _TYPE_MAPPING.values():
+                    h['type'] = type_override
 
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
