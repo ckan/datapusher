@@ -393,12 +393,28 @@ def push_to_datastore(task_id, input, dry_run=False):
     row_set = table_set.tables.pop()
     offset, headers = messytables.headers_guess(row_set.sample)
 
+    existing = datastore_resource_exists(resource_id, api_key, ckan_url)
+    existing_info = None
+    if existing:
+        existing_info = dict((f['id'], f['info'])
+            for f in existing.get('fields', []) if 'info' in f)
+
     # Some headers might have been converted from strings to floats and such.
     headers = [unicode(header) for header in headers]
 
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
     types = messytables.type_guess(row_set.sample, types=TYPES, strict=True)
+
+    # override with types user requested
+    if existing_info:
+        types = [{
+            'text': messytables.StringType(),
+            'numeric': messytables.DecimalType(),
+            'timestamp': messytables.DateUtilType(),
+            }.get(existing_info.get(h, {}).get('type_override'), t)
+            for t, h in zip(types, headers)]
+
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
@@ -420,7 +436,6 @@ def push_to_datastore(task_id, input, dry_run=False):
     'datastore_create' will append to the existing datastore. And if
     the fields have significantly changed, it may also fail.
     '''
-    existing = datastore_resource_exists(resource_id, api_key, ckan_url)
     if existing:
         logger.info('Deleting "{res_id}" from datastore.'.format(
             res_id=resource_id))
@@ -430,12 +445,14 @@ def push_to_datastore(task_id, input, dry_run=False):
                      for field in zip(headers, types)]
 
     # Maintain data dictionaries from matching column names
-    if existing:
-        existing_info = dict((f['id'], f['info'])
-            for f in existing.get('fields', []) if 'info' in f)
+    if existing_info:
         for h in headers_dicts:
             if h['id'] in existing_info:
                 h['info'] = existing_info[h['id']]
+                # create columns with types user requested
+                type_override = existing_info[h['id']].get('type_override')
+                if type_override in _TYPE_MAPPING.values():
+                    h['type'] = type_override
 
     logger.info('Determined headers and types: {headers}'.format(
         headers=headers_dicts))
