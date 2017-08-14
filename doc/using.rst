@@ -16,7 +16,7 @@ CKAN 2.2 and above
 ~~~~~~~~~~~~~~~~~~
 
 When editing a resource in CKAN (clicking the "Manage" button on a resource
-page), a new tab will appear named "Resource Data".
+page), a new tab will appear named "DataStore".
 This will contain a log of the last attempted upload and an opportunity
 to retry to upload.
 
