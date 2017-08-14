@@ -338,6 +338,11 @@ def push_to_datastore(task_id, input, dry_run=False):
     logger.info('Fetching from: {0}'.format(resource.get('url')))
     try:
         request = urllib2.Request(resource.get('url'))
+        
+        if request.get_type().lower() not in ('http', 'https', 'ftp'):
+            raise util.JobError(
+                'Only http, https, and ftp resources may be fetched.'
+            )
 
         if resource.get('url_type') == 'upload':
             # If this is an uploaded file to CKAN, authenticate the request,
