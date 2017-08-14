@@ -16,9 +16,9 @@ CKAN 2.2 and above
 ~~~~~~~~~~~~~~~~~~
 
 When editing a resource in CKAN (clicking the "Manage" button on a resource
-page), a new tab will appear named "Resource Data".
-This will contain a log of the last attempted upload and an opportunity
-to retry to upload.
+page), a new tab will appear named "DataPusher" (pictured with the old name
+"Resource Data"). This will contain a log of the last attempted upload and an
+opportunity to retry to upload.
 
 .. image:: images/ui.png
 
