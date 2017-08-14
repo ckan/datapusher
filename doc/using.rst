@@ -71,7 +71,17 @@ Configuring SSL verification
 ----------------------------
 
 By default the ``datapusher`` will verify that a valid SSL certificate is in
-place on every request it does. You can switch the verification off if needed
-by setting SSL_VERIFY to False in datapusher_settings.py
+place on every request it does. This can be problematic, because the list of
+valid root certificates gets out of date. The suggested fix is to use the latest
+version of ``requests`` and its 'security' addition::
+
+    pip install -U requests[security]
+
+There are no known compatibility issues with ckan or common extensions by using
+a more recent version of requests. (However requests.txt still pins the version,
+as per the ckan policy.)
+
+If it should still be a problem, you can switch the verification off if needed
+by setting SSL_VERIFY to False in datapusher_settings.py::
 
     SSL_VERIFY = False
