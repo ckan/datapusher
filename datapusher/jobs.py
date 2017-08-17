@@ -365,14 +365,21 @@ def push_to_datastore(task_id, input, dry_run=False):
                 request_url=resource.get('url'), response=None)
 
     cl = response.info().getheader('content-length')
+    content = None
     if cl and int(cl) > MAX_CONTENT_LENGTH:
         raise util.JobError(
             'Resource too large to download: {cl} > max ({max_cl}).'.format(
             cl=cl, max_cl=MAX_CONTENT_LENGTH))
+    else:
+        content = response.read()
+        if len(content) > MAX_CONTENT_LENGTH:
+            raise util.JobError(
+                'Resource too large to process: {cl} > max ({max_cl}).'.format(
+                cl=len(content), max_cl=MAX_CONTENT_LENGTH))
 
     ct = response.info().getheader('content-type').split(';', 1)[0]
 
-    f = cStringIO.StringIO(response.read())
+    f = cStringIO.StringIO(content)
     file_hash = hashlib.md5(f.read()).hexdigest()
     f.seek(0)
 
