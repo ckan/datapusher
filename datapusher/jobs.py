@@ -13,8 +13,8 @@ import pprint
 import logging
 import decimal
 import hashlib
-import cStringIO
 import time
+import tempfile
 
 import messytables
 from slugify import slugify
@@ -30,6 +30,7 @@ else:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
+CHUNK_SIZE = 16 * 1024 # 16kb
 DOWNLOAD_TIMEOUT = 30
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0']:
@@ -370,37 +371,45 @@ def push_to_datastore(task_id, input, dry_run=False):
         raise util.JobError(
             'Resource too large to download: {cl} > max ({max_cl}).'.format(
             cl=cl, max_cl=MAX_CONTENT_LENGTH))
-    else:
-        content = response.read()
-        if len(content) > MAX_CONTENT_LENGTH:
-            raise util.JobError(
-                'Resource too large to process: {cl} > max ({max_cl}).'.format(
-                cl=len(content), max_cl=MAX_CONTENT_LENGTH))
 
-    ct = response.info().getheader('content-type').split(';', 1)[0]
+    with tempfile.TemporaryFile() as tmp:
+        length = 0
+        m = hashlib.md5()
+        while True:
+            chunk = response.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            length += len(chunk) 
+            if length > MAX_CONTENT_LENGTH:
+                raise util.JobError(
+                    'Resource too large to process: {cl} > max ({max_cl}).'.format(
+                    cl=length, max_cl=MAX_CONTENT_LENGTH))
+            tmp.write(chunk)
+            m.update(chunk)
 
-    f = cStringIO.StringIO(content)
-    file_hash = hashlib.md5(f.read()).hexdigest()
-    f.seek(0)
+        ct = response.info().getheader('content-type').split(';', 1)[0]
 
-    if (resource.get('hash') == file_hash
-            and not data.get('ignore_hash')):
-        logger.info("The file hash hasn't changed: {hash}.".format(
-            hash=file_hash))
-        return
+        file_hash = m.hexdigest()
+        tmp.seek(0)
 
-    resource['hash'] = file_hash
+        if (resource.get('hash') == file_hash
+                and not data.get('ignore_hash')):
+            logger.info("The file hash hasn't changed: {hash}.".format(
+                hash=file_hash))
+            return
 
-    try:
-        table_set = messytables.any_tableset(f, mimetype=ct, extension=ct)
-    except messytables.ReadError as e:
-        ## try again with format
-        f.seek(0)
+        resource['hash'] = file_hash
+
         try:
-            format = resource.get('format')
-            table_set = messytables.any_tableset(f, mimetype=format, extension=format)
-        except:
-            raise util.JobError(e)
+            table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
+        except messytables.ReadError as e:
+            ## try again with format
+            tmp.seek(0)
+            try:
+                format = resource.get('format')
+                table_set = messytables.any_tableset(tmp, mimetype=format, extension=format)
+            except:
+                raise util.JobError(e)
 
     row_set = table_set.tables.pop()
     offset, headers = messytables.headers_guess(row_set.sample)
