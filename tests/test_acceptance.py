@@ -168,7 +168,7 @@ class TestImport(unittest.TestCase):
             body='a' * size,
             content_type='application/json',
             forcing_headers={
-                'content-length': 0
+                'content-length': ''
             })
 
         jobs.push_to_datastore('fake_id', data, True)
