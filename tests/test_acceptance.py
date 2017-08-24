@@ -104,6 +104,41 @@ class TestImport(unittest.TestCase):
 
     @httpretty.activate
     @raises(util.JobError)
+    def test_too_large_content_length(self):
+        """It should raise JobError if the returned Content-Length header 
+        is too large.
+
+        If the returned header is larger than MAX_CONTENT_LENGTH then the async
+        background job push_to_datastore should raise JobError
+        (ckanserviceprovider will catch this exception and return an error to
+        the client).
+
+        """
+        self.register_urls()
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        # Override the source_url (already mocked by self.register_urls()
+        # above) with another mock response, this one mocks a response body
+        # that's bigger than MAX_CONTENT_LENGTH.
+        source_url = 'http://www.source.org/static/file'
+        size = jobs.MAX_CONTENT_LENGTH + 1
+        httpretty.register_uri(
+            httpretty.GET, source_url,
+            body='a' * size,
+            content_length=size,
+            content_type='application/json')
+
+        jobs.push_to_datastore('fake_id', data, True)
+
+    @httpretty.activate
+    @raises(util.JobError)
     def test_too_large_file(self):
         """It should raise JobError if the data file is too large.
 
@@ -131,8 +166,10 @@ class TestImport(unittest.TestCase):
         httpretty.register_uri(
             httpretty.GET, source_url,
             body='a' * size,
-            content_length=size,
-            content_type='application/json')
+            content_type='application/json',
+            forcing_headers={
+                'content-length': ''
+            })
 
         jobs.push_to_datastore('fake_id', data, True)
 
