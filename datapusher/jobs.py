@@ -354,6 +354,7 @@ def push_to_datastore(task_id, input, dry_run=False):
             url,
             headers=headers,
             timeout=DOWNLOAD_TIMEOUT,
+            verify=SSL_VERIFY,
             stream=True,  # just gets the headers for now
             )
         response.raise_for_status()
