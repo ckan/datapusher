@@ -70,18 +70,25 @@ You can specify the types to use with the following settings in your datapusher_
 Configuring SSL verification
 ----------------------------
 
-By default the ``datapusher`` will verify that a valid SSL certificate is in
-place on every request it does. This can be problematic, because the list of
-valid root certificates gets out of date. The suggested fix is to use the latest
-version of ``requests`` and its 'security' addition::
+By default ``datapusher`` will verify that requests to CKAN and other servers
+with HTTPS are with a valid SSL/TLS certificate. However the default list of
+root certificates is usually held by the operating system, and often gets out of
+date, causing SSL verification errors. (Browsers usually have their own list and
+update it frequently.)
+
+The suggested fix is to use the latest version of ``requests`` and its
+'security' addition::
 
     pip install -U requests[security]
 
-There are no known compatibility issues with ckan or common extensions by using
-a more recent version of requests. (However requests.txt still pins the version,
-as per the ckan policy.)
+There are no known compatibility issues with CKAN or common extensions by using
+a more recent version of requests. (However requirements.txt still pins the
+version, as per the ckan policy.)
 
-If it should still be a problem, you can switch the verification off if needed
-by setting SSL_VERIFY to False in datapusher_settings.py::
+If you still have problems verifying certificates, or maybe for test purposes,
+you can switch the verification off in datapusher_settings.py::
 
     SSL_VERIFY = False
+
+Note there is an ongoing issue with this option:
+https://github.com/ckan/datapusher/issues/149

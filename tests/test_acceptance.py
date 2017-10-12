@@ -14,9 +14,10 @@ import os
 import json
 import unittest
 import datetime
-from nose.tools import assert_equal, raises
 
+from nose.tools import assert_equal, raises
 import httpretty
+import requests
 
 import datapusher.main as main
 import datapusher.jobs as jobs
@@ -401,6 +402,28 @@ class TestImport(unittest.TestCase):
 
         """
         self.register_urls(source_url='http://url-badly-formed')
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        jobs.push_to_datastore('fake_id', data, True)
+
+    @raises(util.JobError)
+    @httpretty.activate
+    def test_bad_scheme(self):
+        """It should raise HTTPError(JobError) if the resource.url is an
+        invalid scheme.
+
+        (ckanserviceprovider will catch this exception and return an error to
+        the client).
+
+        """
+        self.register_urls(source_url='invalid://example.com')
         data = {
             'api_key': self.api_key,
             'job_type': 'push_to_datastore',
