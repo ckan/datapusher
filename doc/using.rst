@@ -89,6 +89,3 @@ If you still have problems verifying certificates, or maybe for test purposes,
 you can switch the verification off in datapusher_settings.py::
 
     SSL_VERIFY = False
-
-Note there is an ongoing issue with this option:
-https://github.com/ckan/datapusher/issues/149
