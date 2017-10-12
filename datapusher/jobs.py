@@ -32,7 +32,7 @@ MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 CHUNK_SIZE = 16 * 1024 # 16kb
 DOWNLOAD_TIMEOUT = 30
 
-if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0']:
+if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
     SSL_VERIFY = False
 else:
     SSL_VERIFY = True
