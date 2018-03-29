@@ -64,31 +64,43 @@ DATASTORE_URLS = {
 detector = UniversalDetector()
 
 
-def is_decode_needs(iterable_obj):
-    no_needs_decode = ['utf-8', 'ascii']
+def is_decode_needs(tmp):
+    needs_decode = ['cp1251', 'KOI8-R', 'MacCyrillic', 'windows-1251']
     detector.reset()
-    for line in iterable_obj:
+    for line in tmp:
         detector.feed(line)
         if detector.done: break
     detector.close()
-    if detector.result['encoding'] in no_needs_decode:
-        return False
-    return True
+    print detector.result['encoding']
+    if detector.result['encoding'] in needs_decode:
+        return True
+    return False
 
 
-def force_decode(value):
+
+def force_decode(tmp):
     """
     Decode cp1251 to utf-8
-    :param value: str
-    :return: utf-8 str
-
     """
-    if isinstance(value, unicode):
-        return value
-    try:
-        return value.decode('cp1251').encode('utf8')
-    except UnicodeEncodeError:
-        return str(value)
+    lst = [line for line in tmp]
+    tmp.seek(0)
+
+    if not is_decode_needs(lst):
+        return tmp
+    decoded_tmp = tempfile.TemporaryFile()
+    decoded_line = ''
+    for line in tmp:
+        if isinstance(line, unicode):
+            decoded_line = line
+        else:
+            try:
+                decoded_line = line.decode('cp1251').encode('utf8')
+            except UnicodeEncodeError:
+                pass
+        decoded_tmp.write(decoded_line)
+    tmp.seek(0)
+    decoded_tmp.seek(0)
+    return decoded_tmp
 
 
 class HTTPError(util.JobError):
@@ -395,6 +407,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                 'Resource too large to download: {cl} > max ({max_cl}).'
                 .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
 
+        print 'RSPONCE >>>>>>>>>>>>>>>>>>>>> {}'.format(vars(response))
         tmp = tempfile.TemporaryFile()
         length = 0
         m = hashlib.md5()
@@ -430,14 +443,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     resource['hash'] = file_hash
 
-    data_copy = [line for line in tmp]
-
-    if is_decode_needs(data_copy):
-        decoded_tmp = tempfile.TemporaryFile()
-        for line in data_copy:
-            decoded_tmp.write(force_decode(line))
-    else:
-        decoded_tmp = tmp
+    decoded_tmp = force_decode(tmp)
 
     try:
         table_set = messytables.any_tableset(decoded_tmp, mimetype=ct, extension=ct)
