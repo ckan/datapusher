@@ -71,7 +71,6 @@ def is_decode_needs(tmp):
         detector.feed(line)
         if detector.done: break
     detector.close()
-    print detector.result['encoding']
     if detector.result['encoding'] in needs_decode:
         return True
     return False
@@ -407,7 +406,6 @@ def push_to_datastore(task_id, input, dry_run=False):
                 'Resource too large to download: {cl} > max ({max_cl}).'
                 .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
 
-        print 'RSPONCE >>>>>>>>>>>>>>>>>>>>> {}'.format(vars(response))
         tmp = tempfile.TemporaryFile()
         length = 0
         m = hashlib.md5()
@@ -443,6 +441,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     resource['hash'] = file_hash
 
+    # Decoded data if needed
     decoded_tmp = force_decode(tmp)
 
     try:
