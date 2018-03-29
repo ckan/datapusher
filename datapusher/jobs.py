@@ -17,6 +17,7 @@ import tempfile
 
 import messytables
 from slugify import slugify
+from chardet import UniversalDetector
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -59,6 +60,35 @@ DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
+
+detector = UniversalDetector()
+
+
+def is_decode_needs(iterable_obj):
+    no_needs_decode = ['utf-8', 'ascii']
+    detector.reset()
+    for line in iterable_obj:
+        detector.feed(line)
+        if detector.done: break
+    detector.close()
+    if detector.result['encoding'] in no_needs_decode:
+        return False
+    return True
+
+
+def force_decode(value):
+    """
+    Decode cp1251 to utf-8
+    :param value: str
+    :return: utf-8 str
+
+    """
+    if isinstance(value, unicode):
+        return value
+    try:
+        return value.decode('cp1251').encode('utf8')
+    except UnicodeEncodeError:
+        return str(value)
 
 
 class HTTPError(util.JobError):
@@ -400,14 +430,23 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     resource['hash'] = file_hash
 
+    data_copy = [line for line in tmp]
+
+    if is_decode_needs(data_copy):
+        decoded_tmp = tempfile.TemporaryFile()
+        for line in data_copy:
+            decoded_tmp.write(force_decode(line))
+    else:
+        decoded_tmp = tmp
+
     try:
-        table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
+        table_set = messytables.any_tableset(decoded_tmp, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
         ## try again with format
-        tmp.seek(0)
+        decoded_tmp.seek(0)
         try:
             format = resource.get('format')
-            table_set = messytables.any_tableset(tmp, mimetype=format, extension=format)
+            table_set = messytables.any_tableset(decoded_tmp, mimetype=format, extension=format)
         except:
             raise util.JobError(e)
 
