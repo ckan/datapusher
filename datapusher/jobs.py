@@ -17,6 +17,7 @@ import tempfile
 
 import messytables
 from slugify import slugify
+from chardet import UniversalDetector
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -29,7 +30,7 @@ else:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
-CHUNK_SIZE = 16 * 1024 # 16kb
+CHUNK_SIZE = 16 * 1024  # 16kb
 DOWNLOAD_TIMEOUT = 30
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
@@ -60,28 +61,62 @@ DATASTORE_URLS = {
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
 
+detector = UniversalDetector()
+
+
+def is_decode_needs(tmp):
+    needs_decode = ['cp1251', 'KOI8-R', 'MacCyrillic', 'windows-1251']
+    detector.reset()
+    for line in tmp:
+        detector.feed(line)
+        if detector.done: break
+    detector.close()
+    if detector.result['encoding'] in needs_decode:
+        return True
+    return False
+
+
+def force_decode(tmp):
+    """
+    Decode cp1251 to utf-8
+    """
+    lst = [line for line in tmp]
+    tmp.seek(0)
+
+    if not is_decode_needs(lst):
+        return tmp
+    decoded_tmp = tempfile.TemporaryFile()
+    decoded_line = ''
+    for line in tmp:
+        if isinstance(line, unicode):
+            decoded_line = line
+        else:
+            try:
+                decoded_line = line.decode('cp1251').encode('utf8')
+            except UnicodeEncodeError:
+                pass
+        decoded_tmp.write(decoded_line)
+    tmp.seek(0)
+    decoded_tmp.seek(0)
+    return decoded_tmp
+
 
 class HTTPError(util.JobError):
     """Exception that's raised if a job fails due to an HTTP problem."""
 
     def __init__(self, message, status_code, request_url, response):
         """Initialise a new HTTPError.
-
         :param message: A human-readable error message
         :type message: string
-
         :param status_code: The status code of the errored HTTP response,
             e.g. 500
         :type status_code: int
-
         :param request_url: The URL that was requested
         :type request_url: string
-
         :param response: The body of the errored HTTP response as unicode
             (if you have a requests.Response object then response.text will
             give you this)
         :type response: unicode
-
         """
         super(HTTPError, self).__init__(message)
         self.status_code = status_code
@@ -90,10 +125,8 @@ class HTTPError(util.JobError):
 
     def as_dict(self):
         """Return a JSON-serializable dictionary representation of this error.
-
         Suitable for ckanserviceprovider to return to the client site as the
         value for the "error" key in the job dict.
-
         """
         if self.response and len(self.response) > 200:
             response = self.response[:200] + '...'
@@ -126,11 +159,9 @@ def get_url(action, ckan_url):
 def check_response(response, request_url, who, good_status=(201, 200), ignore_no_success=False):
     """
     Checks the response and raises exceptions if something went terribly wrong
-
     :param who: A short name that indicated where the error occurred
                 (for example "CKAN")
     :param good_status: Status codes that should not raise an exception
-
     """
     if not response.status_code:
         raise HTTPError(
@@ -163,7 +194,6 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
 def chunky(iterable, n):
     """
     Generates chunks of data that can be loaded into ckan
-
     :param n: Size of each chunks
     :type n: int
     """
@@ -298,16 +328,13 @@ def validate_input(input):
 @job.async
 def push_to_datastore(task_id, input, dry_run=False):
     '''Download and parse a resource push its data into CKAN's DataStore.
-
     An asynchronous job that gets a resource from CKAN, downloads the
     resource's data file and, if the data file has changed since last time,
     parses the data and posts it into CKAN's DataStore.
-
     :param dry_run: Fetch and parse the data file but don't actually post the
         data to the DataStore, instead return the data headers and rows that
         would have been posted.
     :type dry_run: boolean
-
     '''
     handler = util.StoringHandler(task_id, input)
     logger = logging.getLogger(task_id)
@@ -325,10 +352,10 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
     except util.JobError, e:
-        #try again in 5 seconds just incase CKAN is slow at adding resource
+        # try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
-        
+
     # check if the resource url_type is a datastore
     if resource.get('url_type') == 'datastore':
         logger.info('Dump files are managed with the Datastore API')
@@ -356,14 +383,14 @@ def push_to_datastore(task_id, input, dry_run=False):
             timeout=DOWNLOAD_TIMEOUT,
             verify=SSL_VERIFY,
             stream=True,  # just gets the headers for now
-            )
+        )
         response.raise_for_status()
 
         cl = response.headers.get('content-length')
         if cl and int(cl) > MAX_CONTENT_LENGTH:
             raise util.JobError(
                 'Resource too large to download: {cl} > max ({max_cl}).'
-                .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
+                    .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
 
         tmp = tempfile.TemporaryFile()
         length = 0
@@ -373,7 +400,7 @@ def push_to_datastore(task_id, input, dry_run=False):
             if length > MAX_CONTENT_LENGTH:
                 raise util.JobError(
                     'Resource too large to process: {cl} > max ({max_cl}).'
-                    .format(cl=length, max_cl=MAX_CONTENT_LENGTH))
+                        .format(cl=length, max_cl=MAX_CONTENT_LENGTH))
             tmp.write(chunk)
             m.update(chunk)
 
@@ -393,21 +420,24 @@ def push_to_datastore(task_id, input, dry_run=False):
     tmp.seek(0)
 
     if (resource.get('hash') == file_hash
-            and not data.get('ignore_hash')):
+        and not data.get('ignore_hash')):
         logger.info("The file hash hasn't changed: {hash}.".format(
             hash=file_hash))
         return
 
     resource['hash'] = file_hash
 
+    # Decoded data if needed
+    decoded_tmp = force_decode(tmp)
+
     try:
-        table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
+        table_set = messytables.any_tableset(decoded_tmp, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
         ## try again with format
-        tmp.seek(0)
+        decoded_tmp.seek(0)
         try:
             format = resource.get('format')
-            table_set = messytables.any_tableset(tmp, mimetype=format, extension=format)
+            table_set = messytables.any_tableset(decoded_tmp, mimetype=format, extension=format)
         except:
             raise util.JobError(e)
 
@@ -418,7 +448,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     existing_info = None
     if existing:
         existing_info = dict((f['id'], f['info'])
-            for f in existing.get('fields', []) if 'info' in f)
+                             for f in existing.get('fields', []) if 'info' in f)
 
     # Some headers might have been converted from strings to floats and such.
     headers = [unicode(header) for header in headers]
@@ -430,11 +460,11 @@ def push_to_datastore(task_id, input, dry_run=False):
     # override with types user requested
     if existing_info:
         types = [{
-            'text': messytables.StringType(),
-            'numeric': messytables.DecimalType(),
-            'timestamp': messytables.DateUtilType(),
-            }.get(existing_info.get(h, {}).get('type_override'), t)
-            for t, h in zip(types, headers)]
+                     'text': messytables.StringType(),
+                     'numeric': messytables.DecimalType(),
+                     'timestamp': messytables.DateUtilType(),
+                 }.get(existing_info.get(h, {}).get('type_override'), t)
+                 for t, h in zip(types, headers)]
 
     row_set.register_processor(messytables.types_processor(types))
 
@@ -450,6 +480,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                     continue
                 data_row[column_name] = cell.value
             yield data_row
+
     result = row_iterator()
 
     '''
