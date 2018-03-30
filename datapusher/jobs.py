@@ -17,6 +17,7 @@ import tempfile
 
 import messytables
 from slugify import slugify
+from chardet import UniversalDetector
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -59,6 +60,46 @@ DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
+
+detector = UniversalDetector()
+
+
+def is_decode_needs(tmp):
+    needs_decode = ['cp1251', 'KOI8-R', 'MacCyrillic', 'windows-1251']
+    detector.reset()
+    for line in tmp:
+        detector.feed(line)
+        if detector.done: break
+    detector.close()
+    if detector.result['encoding'] in needs_decode:
+        return True
+    return False
+
+
+
+def force_decode(tmp):
+    """
+    Decode cp1251 to utf-8
+    """
+    lst = [line for line in tmp]
+    tmp.seek(0)
+
+    if not is_decode_needs(lst):
+        return tmp
+    decoded_tmp = tempfile.TemporaryFile()
+    decoded_line = ''
+    for line in tmp:
+        if isinstance(line, unicode):
+            decoded_line = line
+        else:
+            try:
+                decoded_line = line.decode('cp1251').encode('utf8')
+            except UnicodeEncodeError:
+                pass
+        decoded_tmp.write(decoded_line)
+    tmp.seek(0)
+    decoded_tmp.seek(0)
+    return decoded_tmp
 
 
 class HTTPError(util.JobError):
@@ -400,14 +441,17 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     resource['hash'] = file_hash
 
+    # Decoded data if needed
+    decoded_tmp = force_decode(tmp)
+
     try:
-        table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
+        table_set = messytables.any_tableset(decoded_tmp, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
         ## try again with format
-        tmp.seek(0)
+        decoded_tmp.seek(0)
         try:
             format = resource.get('format')
-            table_set = messytables.any_tableset(tmp, mimetype=format, extension=format)
+            table_set = messytables.any_tableset(decoded_tmp, mimetype=format, extension=format)
         except:
             raise util.JobError(e)
 
