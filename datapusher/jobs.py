@@ -67,11 +67,13 @@ detector = UniversalDetector()
 def is_decode_needs(tmp):
     needs_decode = ['cp1251', 'KOI8-R', 'MacCyrillic', 'windows-1251']
     detector.reset()
+    tmp.seek(0)
     for line in tmp:
         detector.feed(line)
         if detector.done:
             break
     detector.close()
+    tmp.seek(0)
     if detector.result['encoding'] in needs_decode:
         return True
     return False
@@ -81,10 +83,7 @@ def force_decode(tmp):
     """
     Decode cp1251 to utf-8
     """
-    lst = [line for line in tmp]
-    tmp.seek(0)
-
-    if not is_decode_needs(lst):
+    if not is_decode_needs(tmp):
         return tmp
     decoded_tmp = tempfile.TemporaryFile()
     decoded_line = ''
