@@ -29,7 +29,6 @@ if locale.getdefaultlocale()[0]:
 else:
     locale.setlocale(locale.LC_ALL, '')
 
-MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 CHUNK_SIZE = 16 * 1024  # 16kb
 DOWNLOAD_TIMEOUT = 30
 
@@ -336,6 +335,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         would have been posted.
     :type dry_run: boolean
     '''
+    max_content_length = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
     handler = util.StoringHandler(task_id, input)
     logger = logging.getLogger(task_id)
     logger.addHandler(handler)
@@ -387,20 +387,20 @@ def push_to_datastore(task_id, input, dry_run=False):
         response.raise_for_status()
 
         cl = response.headers.get('content-length')
-        if cl and int(cl) > MAX_CONTENT_LENGTH:
+        if cl and int(cl) > max_content_length:
             raise util.JobError(
                 'Resource too large to download: {cl} > max ({max_cl}).'
-                    .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
+                    .format(cl=cl, max_cl=max_content_length))
 
         tmp = tempfile.TemporaryFile()
         length = 0
         m = hashlib.md5()
         for chunk in response.iter_content(CHUNK_SIZE):
             length += len(chunk)
-            if length > MAX_CONTENT_LENGTH:
+            if length > max_content_length:
                 raise util.JobError(
                     'Resource too large to process: {cl} > max ({max_cl}).'
-                        .format(cl=length, max_cl=MAX_CONTENT_LENGTH))
+                        .format(cl=length, max_cl=max_content_length))
             tmp.write(chunk)
             m.update(chunk)
 
