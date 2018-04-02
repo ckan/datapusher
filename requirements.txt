@@ -1,4 +1,5 @@
 argparse
+chardet==3.0.4
 ckanserviceprovider==0.0.6
 html5lib==0.9999999
 messytables==0.15.2
