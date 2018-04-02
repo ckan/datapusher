@@ -69,7 +69,8 @@ def is_decode_needs(tmp):
     detector.reset()
     for line in tmp:
         detector.feed(line)
-        if detector.done: break
+        if detector.done:
+            break
     detector.close()
     if detector.result['encoding'] in needs_decode:
         return True
