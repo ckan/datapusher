@@ -256,23 +256,6 @@ def send_resource_to_datastore(resource, headers, records,
     check_response(r, url, 'CKAN DataStore')
 
 
-def run_analyze(resource, api_key, ckan_url):
-    """
-    Tells CKAN datastore to run ANALYZE on the table
-    """
-    params = {'resource_id': resource['id']}
-
-    name = resource.get('name')
-    url = get_url('datastore_analyze', ckan_url)
-    r = requests.post(url,
-                      verify=SSL_VERIFY,
-                      data=json.dumps(params),
-                      headers={'Content-Type': 'application/json',
-                               'Authorization': api_key}
-                      )
-    check_response(r, url, 'CKAN DataStore')
-
-
 def update_resource(resource, api_key, ckan_url):
     """
     Update webstore_url and webstore_last_updated in CKAN
