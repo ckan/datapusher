@@ -15,12 +15,33 @@ import datapusher.jobs as jobs
 import ckanserviceprovider.util as util
 
 
-class TestChuncky(unittest.TestCase):
-    def test_chuncky(self):
-        r = jobs.chunky('abcdefg', 3)
-        l = list(r)
-        assert_equal(l, [['a', 'b', 'c'], ['d', 'e', 'f'], ['g']])
+class TestChunky():
+    def test_simple(self):
+        chunks = jobs.chunky('abcdefg', 3)
+        assert_equal(
+            list(chunks),
+            [
+                (['a', 'b', 'c'], False),
+                (['d', 'e', 'f'], False),
+                (['g'], True)
+             ])
 
+    def test_length_is_the_exact_multiple(self):
+        chunks = jobs.chunky('abcdef', 3)
+        assert_equal(
+            list(chunks),
+            [
+                (['a', 'b', 'c'], False),
+                (['d', 'e', 'f'], True),
+             ])
+
+    def test_empty(self):
+        chunks = jobs.chunky('', 3)
+        assert_equal(
+            list(chunks), [])
+
+
+class TestGetUrl():
     def test_get_action_url(self):
         assert_equal(
             jobs.get_url('datastore_create', 'http://www.ckan.org'),
@@ -140,7 +161,7 @@ class TestCkanActionCalls(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, url,
                                body=u'{"success": true}',
                                content_type="application/json")
-        jobs.send_resource_to_datastore({'id': 'an_id'}, [], [], 'my_key', 'http://www.ckan.org/')
+        jobs.send_resource_to_datastore({'id': 'an_id'}, [], [], False, 'my_key', 'http://www.ckan.org/')
 
 
 class TestCheckResponse(unittest.TestCase):
