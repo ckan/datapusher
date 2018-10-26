@@ -360,10 +360,13 @@ def push_to_datastore(task_id, input, dry_run=False):
         response.raise_for_status()
 
         cl = response.headers.get('content-length')
-        if cl and int(cl) > MAX_CONTENT_LENGTH:
-            raise util.JobError(
-                'Resource too large to download: {cl} > max ({max_cl}).'
-                .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
+        try:
+            if cl and int(cl) > MAX_CONTENT_LENGTH:
+                raise util.JobError(
+                    'Resource too large to download: {cl} > max ({max_cl}).'
+                    .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
+        except ValueError:
+            pass
 
         tmp = tempfile.TemporaryFile()
         length = 0

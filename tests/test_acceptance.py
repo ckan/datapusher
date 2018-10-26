@@ -106,7 +106,7 @@ class TestImport(unittest.TestCase):
     @httpretty.activate
     @raises(util.JobError)
     def test_too_large_content_length(self):
-        """It should raise JobError if the returned Content-Length header 
+        """It should raise JobError if the returned Content-Length header
         is too large.
 
         If the returned header is larger than MAX_CONTENT_LENGTH then the async
@@ -169,7 +169,32 @@ class TestImport(unittest.TestCase):
             body='a' * size,
             content_type='application/json',
             forcing_headers={
-                'content-length': ''
+                'content-length': None
+            })
+
+        jobs.push_to_datastore('fake_id', data, True)
+
+    @httpretty.activate
+    def test_content_length_string(self):
+        """If the Content-Length header value is a string, just ignore it.
+        """
+        self.register_urls()
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+
+        source_url = 'http://www.source.org/static/file'
+        httpretty.register_uri(
+            httpretty.GET, source_url,
+            body='aaaaa',
+            content_type='application/json',
+            forcing_headers={
+                'Content-Length': 'some string'
             })
 
         jobs.push_to_datastore('fake_id', data, True)
