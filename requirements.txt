@@ -1,6 +1,6 @@
 argparse
-ckanserviceprovider==0.0.6
-html5lib==0.9999999
+ckanserviceprovider==0.0.7
+html5lib==1.0.1
 messytables==0.15.2
 python-slugify==1.2.1
 certifi

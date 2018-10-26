@@ -414,7 +414,9 @@ def push_to_datastore(task_id, input, dry_run=False):
         except:
             raise util.JobError(e)
 
-    row_set = table_set.tables.pop()
+    get_row_set = web.app.config.get('GET_ROW_SET',
+                                     lambda table_set: table_set.tables.pop())
+    row_set = get_row_set(table_set)
     offset, headers = messytables.headers_guess(row_set.sample)
 
     existing = datastore_resource_exists(resource_id, api_key, ckan_url)
