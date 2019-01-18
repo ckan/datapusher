@@ -79,8 +79,9 @@ To release a new version of DataPusher:
    [PyPI][]:
 
    ```bash
-   python setup.py sdist
-   python setup.py sdist upload
+   python setup.py sdist bdist_wheel
+   pip install --upgrade twine
+   twine upload dist/*
    ```
 
    You may want to test installing and running the new version from PyPI in a
