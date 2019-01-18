@@ -73,7 +73,7 @@ python setup.py build_sphinx
 
 To release a new version of DataPusher:
 
-1. Increment the version number in [setup.py](setup.py)
+1. Increment the version number in [datapusher/__init__.py](datapusher/__init__.py)
 
 2. Build a source distribution of the new version and publish it to
    [PyPI][]:
