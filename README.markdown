@@ -8,7 +8,7 @@
 
 [PyPI]: https://pypi.python.org/pypi/datapusher
 [DataStorer]: https://github.com/ckan/ckanext-datastorer
-[DataPusher documentation]: http://docs.ckan.org/projects/datapusher
+[DataPusher documentation]: https://docs.ckan.org/projects/datapusher/en/latest/
 [CKAN Service Provider]: https://github.com/ckan/ckan-service-provider
 [Messytables]: https://github.com/okfn/messytables
 
