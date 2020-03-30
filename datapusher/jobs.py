@@ -160,18 +160,27 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
             response=response.text)
 
 
-def chunky(iterable, n):
+def chunky(items, num_items_per_chunk):
     """
-    Generates chunks of data that can be loaded into ckan
+    Breaks up a list of items into chunks - multiple smaller lists of items.
+    The last chunk is flagged up.
 
-    :param n: Size of each chunks
-    :type n: int
+    :param items: Size of each chunks
+    :type items: iterable
+    :param num_items_per_chunk: Size of each chunks
+    :type num_items_per_chunk: int
+
+    :returns: multiple tuples: (chunk, is_it_the_last_chunk)
+    :rtype: generator of (list, bool)
     """
-    it = iter(iterable)
-    item = list(itertools.islice(it, n))
-    while item:
-        yield item
-        item = list(itertools.islice(it, n))
+    items_ = iter(items)
+    chunk = list(itertools.islice(items_, num_items_per_chunk))
+    while chunk:
+        next_chunk = list(itertools.islice(items_, num_items_per_chunk))
+        chunk_is_the_last_one = not next_chunk
+        yield chunk, chunk_is_the_last_one
+        chunk = next_chunk
+
 
 
 class DatastoreEncoder(json.JSONEncoder):
@@ -225,14 +234,16 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
             'Error getting datastore resource ({!s}).'.format(e))
 
 
-def send_resource_to_datastore(resource, headers, records, api_key, ckan_url):
+def send_resource_to_datastore(resource, headers, records,
+                               is_it_the_last_chunk, api_key, ckan_url):
     """
     Stores records in CKAN datastore
     """
     request = {'resource_id': resource['id'],
                'fields': headers,
                'force': True,
-               'records': records}
+               'records': records,
+               'calculate_record_count': is_it_the_last_chunk}
 
     name = resource.get('name')
     url = get_url('datastore_create', ckan_url)
@@ -328,7 +339,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         #try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
-        
+
     # check if the resource url_type is a datastore
     if resource.get('url_type') == 'datastore':
         logger.info('Dump files are managed with the Datastore API')
@@ -487,11 +498,13 @@ def push_to_datastore(task_id, input, dry_run=False):
         return headers_dicts, result
 
     count = 0
-    for i, records in enumerate(chunky(result, 250)):
+    for i, chunk in enumerate(chunky(result, 250)):
+        records, is_it_the_last_chunk = chunk
         count += len(records)
-        logger.info('Saving chunk {number}'.format(number=i))
-        send_resource_to_datastore(resource, headers_dicts,
-                                   records, api_key, ckan_url)
+        logger.info('Saving chunk {number} {is_last}'.format(
+            number=i, is_last='(last)' if is_it_the_last_chunk else ''))
+        send_resource_to_datastore(resource, headers_dicts, records,
+                                   is_it_the_last_chunk, api_key, ckan_url)
 
     logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
         n=count, res_id=resource_id))
