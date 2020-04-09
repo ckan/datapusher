@@ -70,7 +70,7 @@ class TestValidation(unittest.TestCase):
                 'resource_id': 'h32jk4h34k5',
                 'ckan_url': 'http://www.ckan.org'
             },
-            'api_key': u'köi'
+            'api_key': 'köi'
         })
 
     @raises(util.JobError)
@@ -127,7 +127,7 @@ class TestCkanActionCalls(unittest.TestCase):
     def test_delete_datastore(self):
         url = 'http://www.ckan.org/api/3/action/datastore_delete'
         httpretty.register_uri(httpretty.POST, url,
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type="application/json")
         jobs.delete_datastore_resource('an_id', 'my_key', 'http://www.ckan.org/')
         assert json.loads(httpretty.last_request().body)['id'] == 'an_id'
@@ -136,7 +136,7 @@ class TestCkanActionCalls(unittest.TestCase):
     def test_resource_update(self):
         url = 'http://www.ckan.org/api/3/action/resource_update'
         httpretty.register_uri(httpretty.POST, url,
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type="application/json")
         jobs.update_resource({'foo': 42}, 'my_key', 'http://www.ckan.org/')
         assert json.loads(httpretty.last_request().body)['url_type'] == 'datapusher'
@@ -148,8 +148,8 @@ class TestCkanActionCalls(unittest.TestCase):
         httpretty.register_uri(httpretty.POST, url,
                                content_type="application/json",
                                responses=[
-                                   httpretty.Response(body=u'{"success": true}', status=200),
-                                   httpretty.Response(body=u'{"success": false}', status=404),
+                                   httpretty.Response(body='{"success": true}', status=200),
+                                   httpretty.Response(body='{"success": false}', status=404),
                                ])
 
         assert jobs.datastore_resource_exists('found', 'api-key', ckan_url)
@@ -159,7 +159,7 @@ class TestCkanActionCalls(unittest.TestCase):
     def test_send_resource_to_datastore(self):
         url = 'http://www.ckan.org/api/3/action/datastore_create'
         httpretty.register_uri(httpretty.POST, url,
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type="application/json")
         jobs.send_resource_to_datastore({'id': 'an_id'}, [], [], False, 'my_key', 'http://www.ckan.org/')
 
@@ -172,7 +172,7 @@ class TestCheckResponse(unittest.TestCase):
         """It should raise HTTPError for a 409 with a non-JSON body."""
         url = 'http://www.ckan.org/'
         httpretty.register_uri(httpretty.GET, url,
-                               body=u"This is someone's text. With ümlauts.",
+                               body="This is someone's text. With ümlauts.",
                                content_type='html/text',
                                status=409)
         r = requests.get('http://www.ckan.org/')
@@ -186,7 +186,7 @@ class TestCheckResponse(unittest.TestCase):
     @httpretty.activate
     def test_text_200(self):
         httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type='html/text',
                                status=200)
         r = requests.get('http://www.ckan.org/')
@@ -197,7 +197,7 @@ class TestCheckResponse(unittest.TestCase):
         """It should raise HTTPError if given a 500 with "success": false."""
         url = 'http://www.ckan.org/'
         httpretty.register_uri(httpretty.GET, url,
-                               body=u'{"success": false}',
+                               body='{"success": false}',
                                content_type='html/text',
                                status=500)
         r = requests.get('http://www.ckan.org/')
@@ -213,7 +213,7 @@ class TestCheckResponse(unittest.TestCase):
     @raises(util.JobError)
     def test_text_404(self):
         httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type='html/text',
                                status=404)
         r = requests.get('http://www.ckan.org/')
@@ -222,7 +222,7 @@ class TestCheckResponse(unittest.TestCase):
     @httpretty.activate
     def test_text_404_ignore(self):
         httpretty.register_uri(httpretty.GET, 'http://www.ckan.org/',
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type='html/text',
                                status=404)
         r = requests.get('http://www.ckan.org/')

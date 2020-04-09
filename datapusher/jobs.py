@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 
 import json
 import requests
@@ -108,7 +108,7 @@ class HTTPError(util.JobError):
         }
 
     def __str__(self):
-        return u'{} status={} url={} response={}'.format(
+        return '{} status={} url={} response={}'.format(
             self.message, self.status_code, self.request_url, self.response) \
             .encode('ascii', 'replace')
 
@@ -334,7 +334,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
-    except util.JobError, e:
+    except util.JobError as e:
         # try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
@@ -436,7 +436,7 @@ def push_to_datastore(task_id, input, dry_run=False):
             for f in existing.get('fields', []) if 'info' in f)
 
     # Some headers might have been converted from strings to floats and such.
-    headers = [unicode(header) for header in headers]
+    headers = [str(header) for header in headers]
 
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
@@ -487,7 +487,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                 h['info'] = existing_info[h['id']]
                 # create columns with types user requested
                 type_override = existing_info[h['id']].get('type_override')
-                if type_override in _TYPE_MAPPING.values():
+                if type_override in list(_TYPE_MAPPING.values()):
                     h['type'] = type_override
 
     logger.info('Determined headers and types: {headers}'.format(

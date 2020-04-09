@@ -2,7 +2,7 @@ import os
 
 import ckanserviceprovider.web as web
 
-import jobs
+from . import jobs
 
 # check whether jobs have been imported properly
 assert(jobs.push_to_datastore)
