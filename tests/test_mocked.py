@@ -55,17 +55,17 @@ class TestImport(unittest.TestCase):
 
         resource_update_url = 'http://www.ckan.org/api/3/action/resource_update'
         httpretty.register_uri(httpretty.POST, resource_update_url,
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type="application/json")
 
         datastore_del_url = 'http://www.ckan.org/api/3/action/datastore_delete'
         httpretty.register_uri(httpretty.POST, datastore_del_url,
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type="application/json")
 
         datastore_url = 'http://www.ckan.org/api/3/action/datastore_create'
         httpretty.register_uri(httpretty.POST, datastore_url,
-                               body=u'{"success": true}',
+                               body='{"success": true}',
                                content_type="application/json")
 
         datastore_check_url = 'http://www.ckan.org/api/3/action/datastore_search'

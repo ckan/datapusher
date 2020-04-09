@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 
 import json
-import socket
 import requests
-import urlparse
+try:
+    from urllib.parse import urlsplit
+except ImportError:
+    from urlparse import urlsplit
+
 import itertools
 import datetime
 import locale
-import pprint
 import logging
 import decimal
 import hashlib
@@ -16,7 +18,6 @@ import time
 import tempfile
 
 import messytables
-from slugify import slugify
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
@@ -29,7 +30,7 @@ else:
     locale.setlocale(locale.LC_ALL, '')
 
 MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
-CHUNK_SIZE = 16 * 1024 # 16kb
+CHUNK_SIZE = 16 * 1024  # 16kb
 DOWNLOAD_TIMEOUT = 30
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
@@ -107,7 +108,7 @@ class HTTPError(util.JobError):
         }
 
     def __str__(self):
-        return u'{} status={} url={} response={}'.format(
+        return '{} status={} url={} response={}'.format(
             self.message, self.status_code, self.request_url, self.response) \
             .encode('ascii', 'replace')
 
@@ -116,7 +117,7 @@ def get_url(action, ckan_url):
     """
     Get url for ckan action
     """
-    if not urlparse.urlsplit(ckan_url).scheme:
+    if not urlsplit(ckan_url).scheme:
         ckan_url = 'http://' + ckan_url.lstrip('/')
     ckan_url = ckan_url.rstrip('/')
     return '{ckan_url}/api/3/action/{action}'.format(
@@ -139,7 +140,7 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
 
     message = '{who} bad response. Status code: {code} {reason}. At: {url}.'
     try:
-        if not response.status_code in good_status:
+        if response.status_code not in good_status:
             json_response = response.json()
             if not ignore_no_success or json_response.get('success'):
                 try:
@@ -151,7 +152,7 @@ def check_response(response, request_url, who, good_status=(201, 200), ignore_no
                 raise HTTPError(
                     message, status_code=response.status_code,
                     request_url=request_url, response=response.text)
-    except ValueError as err:
+    except ValueError:
         message = message.format(
             who=who, code=response.status_code, reason=response.reason,
             url=request_url, resp=response.text[:200])
@@ -180,7 +181,6 @@ def chunky(items, num_items_per_chunk):
         chunk_is_the_last_one = not next_chunk
         yield chunk, chunk_is_the_last_one
         chunk = next_chunk
-
 
 
 class DatastoreEncoder(json.JSONEncoder):
@@ -245,7 +245,6 @@ def send_resource_to_datastore(resource, headers, records,
                'records': records,
                'calculate_record_count': is_it_the_last_chunk}
 
-    name = resource.get('name')
     url = get_url('datastore_create', ckan_url)
     r = requests.post(url,
                       verify=SSL_VERIFY,
@@ -293,20 +292,20 @@ def get_resource(resource_id, ckan_url, api_key):
 
 def validate_input(input):
     # Especially validate metdata which is provided by the user
-    if not 'metadata' in input:
+    if 'metadata' not in input:
         raise util.JobError('Metadata missing')
 
     data = input['metadata']
 
-    if not 'resource_id' in data:
+    if 'resource_id' not in data:
         raise util.JobError('No id provided.')
-    if not 'ckan_url' in data:
+    if 'ckan_url' not in data:
         raise util.JobError('No ckan_url provided.')
     if not input.get('api_key'):
         raise util.JobError('No CKAN API key provided')
 
 
-@job.async
+@job.asynchronous
 def push_to_datastore(task_id, input, dry_run=False):
     '''Download and parse a resource push its data into CKAN's DataStore.
 
@@ -335,8 +334,8 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
-    except util.JobError, e:
-        #try again in 5 seconds just incase CKAN is slow at adding resource
+    except util.JobError as e:
+        # try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
 
@@ -347,7 +346,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # check scheme
     url = resource.get('url')
-    scheme = urlparse.urlsplit(url).scheme
+    scheme = urlsplit(url).scheme
     if scheme not in ('http', 'https', 'ftp'):
         raise util.JobError(
             'Only http, https, and ftp resources may be fetched.'
@@ -367,7 +366,7 @@ def push_to_datastore(task_id, input, dry_run=False):
             timeout=DOWNLOAD_TIMEOUT,
             verify=SSL_VERIFY,
             stream=True,  # just gets the headers for now
-            )
+        )
         response.raise_for_status()
 
         cl = response.headers.get('content-length')
@@ -417,7 +416,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     try:
         table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
-        ## try again with format
+        # try again with format
         tmp.seek(0)
         try:
             format = resource.get('format')
@@ -437,7 +436,7 @@ def push_to_datastore(task_id, input, dry_run=False):
             for f in existing.get('fields', []) if 'info' in f)
 
     # Some headers might have been converted from strings to floats and such.
-    headers = [unicode(header) for header in headers]
+    headers = [str(header) for header in headers]
 
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
@@ -488,7 +487,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                 h['info'] = existing_info[h['id']]
                 # create columns with types user requested
                 type_override = existing_info[h['id']].get('type_override')
-                if type_override in _TYPE_MAPPING.values():
+                if type_override in list(_TYPE_MAPPING.values()):
                     h['type'] = type_override
 
     logger.info('Determined headers and types: {headers}'.format(
