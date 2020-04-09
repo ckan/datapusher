@@ -2,13 +2,11 @@
 from __future__ import unicode_literals
 
 import json
-import socket
 import requests
 import urlparse
 import itertools
 import datetime
 import locale
-import pprint
 import logging
 import decimal
 import hashlib
@@ -16,7 +14,6 @@ import time
 import tempfile
 
 import messytables
-from slugify import slugify
 
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
