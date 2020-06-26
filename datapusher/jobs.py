@@ -354,7 +354,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         )
         
     for black_url in BLACKLIST:
-        if black_url in url:
+        if black_url and black_url in url:
             raise util.JobError(
                 'Resouce can not be fetched - Given URL is blacklisted: %s' % url
             )
