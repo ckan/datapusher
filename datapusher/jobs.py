@@ -463,7 +463,13 @@ def push_to_datastore(task_id, input, dry_run=False):
                 column_name = cell.column.strip()
                 if column_name not in headers_set:
                     continue
-                data_row[column_name] = cell.value
+                if isinstance(cell.value, str):
+                    try:
+                        data_row[column_name] = cell.value.encode('latin-1').decode('utf-8')
+                    except:
+                        data_row[column_name] = cell.value
+                else:
+                    data_row[column_name] = cell.value
             yield data_row
     result = row_iterator()
 
