@@ -44,6 +44,10 @@ Supervisor to keep the process up.
      # Install uWSGI
      sudo /usr/lib/ckan/datapusher/bin/pip install uwsgi
 
+At this point you can run DataPusher with the following command::
+
+    /usr/lib/ckan/datapusher/bin/uwsgi -i /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher-uswgi.ini
+
 
 .. note:: If you are installing the |datapusher| on a different location than
     the default one you need to adapt the relevant paths in the
