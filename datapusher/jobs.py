@@ -215,8 +215,8 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         search_url = get_url('datastore_search', ckan_url)
         response = requests.post(search_url,
                                  verify=SSL_VERIFY,
-                                 params={'id': resource_id,
-                                         'limit': 0},
+                                 data=json.dumps({'id': resource_id,
+                                         'limit': 0}),
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
