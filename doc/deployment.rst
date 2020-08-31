@@ -24,7 +24,7 @@ Supervisor to keep the process up.
 
 	 # Install requirements for the DataPusher
 	 sudo apt install python3-venv python3-dev build-essential
-	 sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git libffi-dev
+	 sudo apt-get install python-dev python-virtualenv build-essential libxslt1-dev libxml2-dev git libffi-dev postgresql libpq-dev
 
 	 # Create a virtualenv for datapusher
      sudo python3 -m venv /usr/lib/ckan/datapusher
@@ -40,6 +40,13 @@ Supervisor to keep the process up.
 	 cd datapusher
 	 sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
 	 sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
+
+	 # Create a PostgreSQL database
+	 sudo -u postgres createuser -S -D -R -P datapusher_jobs
+	 sudo -u postgres createdb -O datapusher_jobs datapusher_jobs -E utf-8
+	 # after creating the datapusher_jobs directory, update 
+	 # SQLALCHEMY_DATABASE_URI in datapusher_settings.py with the datapusher_jobs password
+	 # and if required, the PostgreSQL host/port if the database is on a remote DB server.
 
      # Install uWSGI
      sudo /usr/lib/ckan/datapusher/bin/pip install uwsgi
