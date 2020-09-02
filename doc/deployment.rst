@@ -44,7 +44,7 @@ Supervisor to keep the process up.
 	 # Create a PostgreSQL database
 	 sudo -u postgres createuser -S -D -R -P datapusher_jobs
 	 sudo -u postgres createdb -O datapusher_jobs datapusher_jobs -E utf-8
-	 # after creating the datapusher_jobs directory, update 
+	 # after creating the datapusher_jobs database, update 
 	 # SQLALCHEMY_DATABASE_URI in datapusher_settings.py with the datapusher_jobs password
 	 # and if required, the PostgreSQL host/port if the database is on a remote DB server.
 
