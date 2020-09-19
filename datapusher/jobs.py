@@ -5,8 +5,10 @@ import json
 import requests
 try:
     from urllib.parse import urlsplit
+    from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlsplit
+    from urlparse import urlparse
 
 import itertools
 import datetime
@@ -41,6 +43,12 @@ else:
 
 if not SSL_VERIFY:
     requests.packages.urllib3.disable_warnings()
+
+if web.app.config.get('REWRITE_RESOURCES') in ['True', 'TRUE', '1', True, 1]:
+    REWRITE_RESOURCES = True
+    REWRITE_URL = web.app.config.get('REWRITE_URL') or 'http://ckan:5000/'
+else:
+    REWRITE_RESOURCES = False
 
 _TYPE_MAPPING = {
     'String': 'text',
@@ -360,6 +368,15 @@ def push_to_datastore(task_id, input, dry_run=False):
         # If this is an uploaded file to CKAN, authenticate the request,
         # otherwise we won't get file from private resources
         headers['Authorization'] = api_key
+
+        # If CKAN is behind a firewall and ckan.datapusher.callback_url_base
+        # is used, we need to rewrite the URL of the resource
+        if REWRITE_RESOURCES:
+            resource_url = urlparse(url)
+            rewrite_url = urlparse(REWRITE_URL)
+            new_url = resource_url._replace(scheme=rewrite_url.scheme, netloc=rewrite_url.netloc)
+            url = new_url.geturl()
+            logger.info('Rewrote resource url to: {0}'.format(url))
     try:
         response = requests.get(
             url,
