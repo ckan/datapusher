@@ -33,6 +33,7 @@ MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 CHUNK_SIZE = web.app.config.get('CHUNK_SIZE') or 16384
 CHUNK_INSERT_ROWS = web.app.config.get('CHUNK_INSERT_ROWS') or 250
 DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
+EXTERNAL_STORAGE = web.app.config.get('EXTERNAL_STORAGE') or False
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
     SSL_VERIFY = False
@@ -359,7 +360,8 @@ def push_to_datastore(task_id, input, dry_run=False):
     if resource.get('url_type') == 'upload':
         # If this is an uploaded file to CKAN, authenticate the request,
         # otherwise we won't get file from private resources
-        headers['Authorization'] = api_key
+        if not EXTERNAL_STORAGE:
+            headers['Authorization'] = api_key
     try:
         response = requests.get(
             url,

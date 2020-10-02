@@ -46,6 +46,20 @@ Dominik Moritz <dominik.moritz@okfn.org>. For the current list of contributors
 see [github.com/ckan/datapusher/contributors](https://github.com/ckan/datapusher/contributors)
 
 
+## Configuration Options
+
+- `HOST`: 
+- `PORT`:
+- `MAX_CONTENT_LENGTH`: (Default: 10485760)
+- `CHUNK_SIZE`: (Default: 16384)
+- `CHUNK_INSERT_ROWS`: (Default: 250)
+- `DOWNLOAD_TIMEOUT`: (Default: 30)
+- `EXTERNAL_STORAGE`: Add an option to exclude CKAN API which mitigates [this issue](https://github.com/ckan/datapusher/issues/116) (Default: False)
+- `SSL_VERIFY`: (Default: True)
+- `TYPE_MAPPING`:
+- `TYPES`:
+- `GET_ROW_SET`:
+
 ## Development
 
 To install DataPusher for development:
