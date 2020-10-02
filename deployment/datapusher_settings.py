@@ -24,3 +24,7 @@ PORT = 8800
 
 #LOG_FILE = '/tmp/ckan_service.log'
 STDERR = True
+
+# other
+
+#EXTERNAL_STORAGE = False
