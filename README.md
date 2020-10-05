@@ -5,9 +5,6 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
 [![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://pypi.python.org/pypi/datapusher/)
 
-[PyPI]: https://pypi.python.org/pypi/datapusher
-[DataStorer]: https://github.com/ckan/ckanext-datastorer
-[DataPusher documentation]: https://docs.ckan.org/projects/datapusher/en/latest/
 [CKAN Service Provider]: https://github.com/ckan/ckan-service-provider
 [Messytables]: https://github.com/okfn/messytables
 
