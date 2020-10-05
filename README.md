@@ -116,6 +116,34 @@ At this point you can run DataPusher with the following command:
 one you need to adapt the relevant paths in the `datapusher-uwsgi.ini` to the ones you are using.
 
 
+### High Availability Setup
+
+The default DataPusher configuration uses SQLite as the backend for the jobs database and a single uWSGI thread. To increase performance and concurrency you can configure DataPusher in the following way:
+
+1. Use Postgres as database backend, which will allow concurrent writes (and provide a more reliable backend anyway). To use Postgres, create a user and a database and update the `SQLALCHEMY_DATABASE_URI` settting accordingly:
+
+    ```
+    # This assumes DataPusher is already installed
+    sudo apt-get install postgresql libpq-dev
+    sudo -u postgres createuser -S -D -R -P datapusher_jobs
+    sudo -u postgres createdb -O datapusher_jobs datapusher_jobs -E utf-8
+
+	# Run this in the virtualenv where DataPusher is installed
+	pip install psycopg2
+
+    # Edit SQLALCHEMY_DATABASE_URI in datapusher_settings.py accordingly
+    # eg SQLALCHEMY_DATABASE_URI=postgresql://datapusher_jobs:YOURPASSWORD@localhost/datapusher_jobs
+    ```
+
+2. Start more uWSGI threads. On the `deployment/datapusher-uwsgi.ini` file, set `workers` and `threads` to a value that suits your needs, and add the `lazy-apps=true` setting to avoid concurrency issues with SQLAlchemy, eg:
+
+    ```
+    # ... rest of datapusher-uwsgi.ini
+	workers         =  3
+	threads         =  3
+	lazy-apps       =  true
+    ```
+
 ## Configuring
 
 
@@ -144,17 +172,20 @@ Here's a summary of the options available.
 | -- | -- | -- |
 | HOST | '0.0.0.0' | Web server host |
 | PORT | 8800 | Web server port |
-| SQLALCHEMY_DATABASE_URI | 'sqlite:////tmp/job_store.db' | SQLAlchemy Database URL |
+| SQLALCHEMY_DATABASE_URI | 'sqlite:////tmp/job_store.db' | SQLAlchemy Database URL. See note about database backend below. |
 | MAX_CONTENT_LENGTH | '1024000' | Max size of files to process in bytes |
 | CHUNK_SIZE | '16384' | Chunk size when processing the data file |
 | CHUNK_INSERT_ROWS | '250' | Number of records to send a request to datastore |
 | DOWNLOAD_TIMEOUT | '30' | Download timeout for requesting the file |
 | SSL_VERIFY | False | Do not validate SSL certificates when requesting the data file (*Warning*: Do not use this setting in production) |
 | TYPES | [messytables.StringType, messytables.DecimalType, messytables.IntegerType, messytables.DateUtilType] | [Messytables][] types used internally, can be modified to customize the type guessing |
-| TYPE_MAPPING | {'String': 'text', 'Integer': 'numeric', 'Decimal': 'numeric', 'DateUtil': 'timestamp' | Internal Messytables type mapping |
-}
+| TYPE_MAPPING | {'String': 'text', 'Integer': 'numeric', 'Decimal': 'numeric', 'DateUtil': 'timestamp'} | Internal Messytables type mapping |
+
 
 Most of the configuration options above can be also provided as environment variables prepending the name with `DATAPUSHER_`, eg `DATAPUSHER_SQLALCHEMY_DATABASE_URI`, `DATAPUSHER_PORT`, etc.
+
+
+By default DataPusher uses SQLite as the database backend for the jobs information. This is fine for local development and sites with low activity, but for sites that need more performance should use Postgres as the backend for the jobs database (eg `SQLALCHEMY_DATABASE_URI=postgresql://datapusher_jobs:YOURPASSWORD@localhost/datapusher_jobs`. See also [High Availability Setup](#high-availability-setup). If SQLite is used, is probably a good idea to store the database in a location other than `/tmp`. This will prevent the database being dropped, causing out of sync errors in the CKAN side. A good place to store it is the CKAN storage folder (if DataPusher is installed in the same server), generally in `/var/lib/ckan/`.
 
 
 ## Usage
