@@ -63,7 +63,7 @@ By default DataPusher should be running at the following port:
     http://localhost:8800/
 
 If you need to change the host or port, copy `deployment/datapusher_settings.py` to
-`deployment/datapusher_local_settings.py` and modify the file to suit your needs.
+`deployment/datapusher_local_settings.py` and modify the file to suit your needs. Also if running a production setup, make sure that the host and port matcht the `http` settings in the uWSGI configuration.
 
 To run the tests:
 
@@ -104,6 +104,10 @@ Supervisor to keep the process up.
 	 sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
 	 sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
 
+     # Create a user to run the web service (if necessary)
+     sudo addgroup www-data
+     sudo adduser -G www-data www-data
+
      # Install uWSGI
      sudo /usr/lib/ckan/datapusher/bin/pip install uwsgi
 
@@ -112,8 +116,8 @@ At this point you can run DataPusher with the following command:
     /usr/lib/ckan/datapusher/bin/uwsgi -i /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher-uswgi.ini
 
 
-*Note*: If you are installing the DataPusher on a different location than the defaul
-one you need to adapt the relevant paths in the `datapusher-uwsgi.ini` to the ones you are using.
+*Note*: If you are installing the DataPusher on a different location than the default
+one you need to adapt the relevant paths in the `datapusher-uwsgi.ini` to the ones you are using. Also you might need to change the `uid` and `guid` settings when using a different user.
 
 
 ### High Availability Setup
@@ -157,7 +161,7 @@ Add `datapusher` to the plugins in your CKAN configuration file
 In order to tell CKAN where this webservice is located, the following must be
 added to the `[app:main]` section of your CKAN configuration file :
 
-    ckan.datapusher.url = http://0.0.0.0:8800/
+    ckan.datapusher.url = http://127.0.0.1:8800/
 
 There are other CKAN configuration options that allow to customize the CKAN - DataPusher
 integation. Please refer to the [DataPusher Settings](https://docs.ckan.org/en/latest/maintaining/configuration.html#datapusher-settings) section in the CKAN documentation for more details.
