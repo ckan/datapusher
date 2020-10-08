@@ -50,7 +50,6 @@ Get the code::
 
 Install the dependencies::
 
-    pip install -r requirements.txt
     pip install -r requirements-dev.txt
     pip install -e .
 
@@ -101,7 +100,6 @@ Supervisor to keep the process up.
 
 	 # Install the DataPusher and its requirements
 	 cd datapusher
-	 sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
 	 sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
 
      # Create a user to run the web service (if necessary)

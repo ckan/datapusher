@@ -59,7 +59,12 @@ setup(
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/technical.html#install-requires-vs-requirements-files
-    install_requires=[],
+    install_requires=['argparse',
+                      'certifi',
+                      'ckanserviceprovider==0.0.10',
+                      'html5lib==1.1',
+                      'messytables==0.15.2',
+                      'requests[security]==2.24.0'],
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
