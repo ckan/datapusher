@@ -348,9 +348,9 @@ def push_to_datastore(task_id, input, dry_run=False):
     # check scheme
     url = resource.get('url')
     scheme = urlsplit(url).scheme
-    if scheme not in ('http', 'https', 'ftp'):
+    if scheme not in ('http', 'https'):
         raise util.JobError(
-            'Only http, https, and ftp resources may be fetched.'
+            'Only http and https resources may be fetched.'
         )
 
     # fetch the resource data
