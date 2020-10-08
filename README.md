@@ -148,6 +148,17 @@ The default DataPusher configuration uses SQLite as the backend for the jobs dat
 	lazy-apps       =  true
     ```
 
+## Docker
+
+The repository contains a `Dockerfile` which is used to build a docker image for datapusher. Usage:
+```bash
+docker build -t mynamespace/datapusher .
+docker run -p 8800:8800 mynamespace/datapusher
+```
+
+In case you want to use the docker image for production deployments, it's important to take into account the [Production deployment](#production-deployment) considerations and modify your `Dockerfile`, `deployment/datapusher-uwsgi.ini` and `deployment/datapusher_settings.py` accordingly.
+
+
 ## Configuring
 
 
