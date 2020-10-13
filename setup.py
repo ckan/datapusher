@@ -29,6 +29,9 @@ setup(
     # Choose your license
     license='AGPL',
 
+    # Supported python distributions
+    python_requires='>=3.6',
+
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
