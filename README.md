@@ -113,7 +113,7 @@ Supervisor to keep the process up.
 
 At this point you can run DataPusher with the following command:
 
-    /usr/lib/ckan/datapusher/bin/uwsgi -i /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher-uswgi.ini
+    /usr/lib/ckan/datapusher/bin/uwsgi -i /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher-uwsgi.ini
 
 
 *Note*: If you are installing the DataPusher on a different location than the default
