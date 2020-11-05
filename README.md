@@ -133,7 +133,7 @@ The default DataPusher configuration uses SQLite as the backend for the jobs dat
     sudo -u postgres createdb -O datapusher_jobs datapusher_jobs -E utf-8
 
 	# Run this in the virtualenv where DataPusher is installed
-	pip install psycopg2
+    sudo /usr/lib/ckan/datapusher/bin/pip install psycopg2
 
     # Edit SQLALCHEMY_DATABASE_URI in datapusher_settings.py accordingly
     # eg SQLALCHEMY_DATABASE_URI=postgresql://datapusher_jobs:YOURPASSWORD@localhost/datapusher_jobs
