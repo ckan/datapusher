@@ -22,6 +22,9 @@ import messytables
 import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 from ckanserviceprovider import web
+import psycopg2
+import csv
+import six
 
 if locale.getdefaultlocale()[0]:
     lang, encoding = locale.getdefaultlocale()
@@ -33,6 +36,8 @@ MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 CHUNK_SIZE = web.app.config.get('CHUNK_SIZE') or 16384
 CHUNK_INSERT_ROWS = web.app.config.get('CHUNK_INSERT_ROWS') or 250
 DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
+COPY_MODE = web.app.config.get('COPY_MODE') or False
+COPY_WRITE_ENGINE_URL = web.app.config.get('COPY_WRITE_ENGINE_URL')
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
     SSL_VERIFY = False
@@ -503,17 +508,78 @@ def push_to_datastore(task_id, input, dry_run=False):
     if dry_run:
         return headers_dicts, result
 
-    count = 0
-    for i, chunk in enumerate(chunky(result, CHUNK_INSERT_ROWS)):
-        records, is_it_the_last_chunk = chunk
-        count += len(records)
-        logger.info('Saving chunk {number} {is_last}'.format(
-            number=i, is_last='(last)' if is_it_the_last_chunk else ''))
-        send_resource_to_datastore(resource, headers_dicts, records,
-                                   is_it_the_last_chunk, api_key, ckan_url)
+    if not COPY_MODE:
+        count = 0
+        for i, chunk in enumerate(chunky(result, CHUNK_INSERT_ROWS)):
+            records, is_it_the_last_chunk = chunk
+            count += len(records)
+            logger.info('Saving chunk {number} {is_last}'.format(
+                number=i, is_last='(last)' if is_it_the_last_chunk else ''))
+            send_resource_to_datastore(resource, headers_dicts, records,
+                                       is_it_the_last_chunk, api_key, ckan_url)
 
-    logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
-        n=count, res_id=resource_id))
+        logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
+            n=count, res_id=resource_id))
+    else:
+        # use Postgres COPY so its much faster
+        logger.info('Copying to database...')
+        timer_start = time.perf_counter()
+
+        # first, let's create an empty datastore table
+        # with the guessed data types
+        records = [{}]
+        send_resource_to_datastore(resource, headers_dicts, records,
+            is_it_the_last_chunk, api_key, ckan_url)
+
+        # Guess the delimiter used in the file for copy
+        with open(tmp, 'rb') as f:
+            header_line = f.readline()
+        try:
+            sniffer = csv.Sniffer()
+            delimiter = sniffer.sniff(six.ensure_text(header_line)).delimiter
+        except csv.Error:
+            logger.warning('Could not determine delimiter from file, use default ","')
+            delimiter = ','
+
+        # now copy from file
+        try:
+            raw_connection = psycopg2.connect(COPY_WRITE_ENGINE_URL)
+        except psycopg2.Error as e:
+            error_str = str(e)
+            logger.warning(error_str)
+            rowcount = 0
+        else:
+            try:
+                cur = raw_connection.cursor()
+                try:
+                    copy_sql = "COPY \"{resource_id}\" ({column_names}) "
+                                "FROM STDIN "
+                                "WITH (DELIMITER '{delimiter}', FORMAT csv, HEADER 1, "
+                                "      ENCODING '{encoding}');"
+                                .format(
+                                    resource_id=resource_id,
+                                    column_names=', '.join(['"{}"'.format(h['id'])
+                                                            for h in headers_dicts]),
+                                    delimiter=delimiter,
+                                    encoding='UTF8',
+                                    )
+                    logger.info(copy_sql)
+                    with open(tmp, 'rb') as f:
+                        try:
+                            cur.copy_expert(copy_sql, f)
+                        except psycopg2.DataError as e:
+                            error_str = str(e)
+                            logger.warning(error_str)
+                finally:
+                    rowcount = cur.rowcount
+                    cur.close()
+            finally:
+                raw_connection.commit()
+                raw_connection.close()
+
+        timer_stop = time.perf_counter()
+        logger.info('...copying done. Copied {n} entries to "{res_id}" in {elapsed} seconds.'.format(
+            n=rowcount, res_id=resource_id, elapsed=timer_stop - timer_start))
 
     if data.get('set_url_type', False):
         update_resource(resource, api_key, ckan_url)
