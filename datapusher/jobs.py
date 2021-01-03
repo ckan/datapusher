@@ -190,7 +190,7 @@ def chunky(items, num_items_per_chunk):
 
 
 class DatastoreEncoder(json.JSONEncoder):
-    # Custon JSON encoder
+    # Custom JSON encoder
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
@@ -261,12 +261,12 @@ def send_resource_to_datastore(resource, headers, records,
     check_response(r, url, 'CKAN DataStore')
 
 
-def update_resource(resource, api_key, ckan_url):
+def update_resource(resource, api_key, ckan_url, url_type):
     """
     Update webstore_url and webstore_last_updated in CKAN
     """
 
-    resource['url_type'] = 'datapusher'
+    resource['url_type'] = url_type
 
     url = get_url('resource_update', ckan_url)
     r = requests.post(
@@ -297,7 +297,7 @@ def get_resource(resource_id, ckan_url, api_key):
 
 
 def validate_input(input):
-    # Especially validate metdata which is provided by the user
+    # Especially validate metadata which is provided by the user
     if 'metadata' not in input:
         raise util.JobError('Metadata missing')
 
@@ -340,7 +340,7 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     try:
         resource = get_resource(resource_id, ckan_url, api_key)
-    except util.JobError as e:
+    except util.JobError:
         # try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
         resource = get_resource(resource_id, ckan_url, api_key)
@@ -384,7 +384,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         except ValueError:
             pass
 
-        tmp = tempfile.TemporaryFile()
+        tmp = tempfile.NamedTemporaryFile()
         length = 0
         m = hashlib.md5()
         for chunk in response.iter_content(CHUNK_SIZE):
@@ -411,8 +411,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     file_hash = m.hexdigest()
     tmp.seek(0)
 
-    if (resource.get('hash') == file_hash
-            and not data.get('ignore_hash')):
+    if (resource.get('hash') == file_hash and not data.get('ignore_hash')):
         logger.info("The file hash hasn't changed: {hash}.".format(
             hash=file_hash))
         return
@@ -520,6 +519,9 @@ def push_to_datastore(task_id, input, dry_run=False):
 
         logger.info('Successfully pushed {n} entries to "{res_id}".'.format(
             n=count, res_id=resource_id))
+
+        if data.get('set_url_type', False):
+            update_resource(resource, api_key, ckan_url, 'datapusher')
     else:
         # use Postgres COPY so its much faster
         logger.info('Copying to database...')
@@ -527,12 +529,11 @@ def push_to_datastore(task_id, input, dry_run=False):
 
         # first, let's create an empty datastore table
         # with the guessed data types
-        records = [{}]
-        send_resource_to_datastore(resource, headers_dicts, records,
-            is_it_the_last_chunk, api_key, ckan_url)
+        send_resource_to_datastore(resource, headers_dicts, None,
+            False, api_key, ckan_url)
 
         # Guess the delimiter used in the file for copy
-        with open(tmp, 'rb') as f:
+        with open(tmp.name, 'rb') as f:
             header_line = f.readline()
         try:
             sniffer = csv.Sniffer()
@@ -551,20 +552,24 @@ def push_to_datastore(task_id, input, dry_run=False):
         else:
             try:
                 cur = raw_connection.cursor()
+                # truncate table to use copy freeze option and further increase
+                # performance as there is no need for WAL logs this way
+                # https://www.cybertec-postgresql.com/en/loading-data-in-the-most-efficient-way/
+                # https://www.postgresql.org/docs/9.1/populate.html#POPULATE-COPY-FROM
+                cur.execute('TRUNCATE TABLE \"{resource_id}\";'.format(
+                    resource_id=resource_id))
                 try:
-                    copy_sql = "COPY \"{resource_id}\" ({column_names}) "
-                                "FROM STDIN "
-                                "WITH (DELIMITER '{delimiter}', FORMAT csv, HEADER 1, "
-                                "      ENCODING '{encoding}');"
-                                .format(
-                                    resource_id=resource_id,
-                                    column_names=', '.join(['"{}"'.format(h['id'])
-                                                            for h in headers_dicts]),
-                                    delimiter=delimiter,
-                                    encoding='UTF8',
-                                    )
+                    copy_sql = ("COPY \"{resource_id}\" ({column_names}) FROM STDIN "
+                        "WITH (DELIMITER '{delimiter}', FORMAT csv, FREEZE 1, "
+                        "HEADER 1, ENCODING '{encoding}');").format(
+                            resource_id=resource_id,
+                            column_names=', '.join(['"{}"'.format(h['id'])
+                                                    for h in headers_dicts]),
+                            delimiter=delimiter,
+                            encoding='UTF8',
+                            )
                     logger.info(copy_sql)
-                    with open(tmp, 'rb') as f:
+                    with open(tmp.name, 'rb') as f:
                         try:
                             cur.copy_expert(copy_sql, f)
                         except psycopg2.DataError as e:
@@ -572,14 +577,24 @@ def push_to_datastore(task_id, input, dry_run=False):
                             logger.warning(error_str)
                 finally:
                     rowcount = cur.rowcount
-                    cur.close()
             finally:
                 raw_connection.commit()
+                raw_connection.set_isolation_level(
+                    psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                cur = raw_connection.cursor()
+                logger.info('Vacuum Analyzing table...')
+                cur.execute('VACUUM ANALYZE \"{resource_id}\";'.format(
+                    resource_id=resource_id))
                 raw_connection.close()
 
-        timer_stop = time.perf_counter()
+        elapsed = time.perf_counter() - timer_start
         logger.info('...copying done. Copied {n} entries to "{res_id}" in {elapsed} seconds.'.format(
-            n=rowcount, res_id=resource_id, elapsed=timer_stop - timer_start))
+            n='{:,}'.format(rowcount), res_id=resource_id, elapsed='{:,.2f}'.format(elapsed)))
 
-    if data.get('set_url_type', False):
-        update_resource(resource, api_key, ckan_url)
+        send_resource_to_datastore(resource, headers_dicts, None,
+                                   True, api_key, ckan_url)
+
+        resource['datastore_active'] = True
+        update_resource(resource, api_key, ckan_url, 'upload')
+
+    tmp.close()  # close temporary file
