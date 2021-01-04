@@ -550,12 +550,12 @@ def push_to_datastore(task_id, input, dry_run=False):
             delimiter = ','
 
         # now copy from file
+        rowcount = 0
         try:
             raw_connection = psycopg2.connect(COPY_WRITE_ENGINE_URL)
         except psycopg2.Error as e:
             error_str = str(e)
             logger.warning(error_str)
-            rowcount = 0
         else:
             cur = raw_connection.cursor()
             # we truncate table to use copy freeze option and further increase
