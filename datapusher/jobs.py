@@ -262,12 +262,12 @@ def send_resource_to_datastore(resource, headers, api_key, ckan_url,
     check_response(r, url, 'CKAN DataStore')
 
 
-def update_resource(resource, api_key, ckan_url, url_type):
+def update_resource(resource, api_key, ckan_url):
     """
     Update webstore_url and webstore_last_updated in CKAN
     """
 
-    resource['url_type'] = url_type
+    resource['url_type'] = 'datapusher'
 
     url = get_url('resource_update', ckan_url)
     r = requests.post(
@@ -528,7 +528,7 @@ def push_to_datastore(task_id, input, dry_run=False):
             n='{:,}'.format(count), res_id=resource_id, elapsed='{:,.2f}'.format(elapsed)))
 
         if data.get('set_url_type', False):
-            update_resource(resource, api_key, ckan_url, 'datapusher')
+            update_resource(resource, api_key, ckan_url)
     else:
         # use Postgres COPY so its much faster
         logger.info('Copying to database...')
@@ -594,6 +594,6 @@ def push_to_datastore(task_id, input, dry_run=False):
             n='{:,}'.format(rowcount), res_id=resource_id, elapsed='{:,.2f}'.format(elapsed)))
 
         resource['datastore_active'] = True
-        update_resource(resource, api_key, ckan_url, 'upload')
+        update_resource(resource, api_key, ckan_url)
 
     tmp.close()  # close temporary file
