@@ -25,6 +25,7 @@ from ckanserviceprovider import web
 import psycopg2
 import csv
 import six
+from pathlib import Path
 
 if locale.getdefaultlocale()[0]:
     lang, encoding = locale.getdefaultlocale()
@@ -36,7 +37,7 @@ MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
 CHUNK_SIZE = web.app.config.get('CHUNK_SIZE') or 16384
 CHUNK_INSERT_ROWS = web.app.config.get('CHUNK_INSERT_ROWS') or 250
 DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
-COPY_MODE = web.app.config.get('COPY_MODE') or False
+COPY_MODE_SIZE = web.app.config.get('COPY_MODE_SIZE') or 0
 COPY_WRITE_ENGINE_URL = web.app.config.get('COPY_WRITE_ENGINE_URL')
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
@@ -481,7 +482,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     result = row_iterator()
 
     '''
-    Delete existing datstore resource before proceeding. Otherwise
+    Delete existing datastore resource before proceeding. Otherwise
     'datastore_create' will append to the existing datastore. And if
     the fields have significantly changed, it may also fail.
     '''
@@ -509,7 +510,12 @@ def push_to_datastore(task_id, input, dry_run=False):
     if dry_run:
         return headers_dicts, result
 
-    if not COPY_MODE:
+    fileSize = Path(tmp.name).stat().st_size
+
+    # If COPY_MODE_SIZE is zero, or the filesize is less than the
+    # COPY_MODE_SIZE threshold in bytes, push thru Datastore API.
+    # Otherwise, use COPY if we have a COPY_WRITE_ENGINE_URL
+    if not COPY_MODE_SIZE or not COPY_WRITE_ENGINE_URL or fileSize < COPY_MODE_SIZE:
         count = 0
         notify_time = timer_start = time.perf_counter()
         for i, chunk in enumerate(chunky(result, CHUNK_INSERT_ROWS)):
@@ -530,12 +536,11 @@ def push_to_datastore(task_id, input, dry_run=False):
         if data.get('set_url_type', False):
             update_resource(resource, api_key, ckan_url)
     else:
-        # use Postgres COPY so its much faster
+        # for larger files, use Postgres COPY as its much faster
         logger.info('Copying to database...')
         timer_start = time.perf_counter()
 
-        # first, let's create an empty datastore table
-        # with the guessed data types
+        # first, let's create an empty datastore table w/ guessed types
         send_resource_to_datastore(resource, headers_dicts, api_key, ckan_url,
                                    records=None, is_it_the_last_chunk=False)
 
@@ -546,21 +551,18 @@ def push_to_datastore(task_id, input, dry_run=False):
             sniffer = csv.Sniffer()
             delimiter = sniffer.sniff(six.ensure_text(header_line)).delimiter
         except csv.Error:
-            logger.warning('Could not determine delimiter from file, using ","')
+            logger.warning('Could not determine delimiter, using ","')
             delimiter = ','
 
-        # now copy from file
         rowcount = 0
         try:
             raw_connection = psycopg2.connect(COPY_WRITE_ENGINE_URL)
         except psycopg2.Error as e:
-            error_str = str(e)
-            logger.warning(error_str)
+            logger.warning(str(e))
         else:
             cur = raw_connection.cursor()
-            # we truncate table to use copy freeze option and further increase
+            # truncate table to use copy freeze option and further increase
             # performance as there is no need for WAL logs to be maintained
-            # https://www.cybertec-postgresql.com/en/loading-data-in-the-most-efficient-way/
             # https://www.postgresql.org/docs/9.1/populate.html#POPULATE-COPY-FROM
             cur.execute('TRUNCATE TABLE \"{resource_id}\";'.format(resource_id=resource_id))
 
@@ -577,8 +579,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                 try:
                     cur.copy_expert(copy_sql, f)
                 except psycopg2.Error as e:
-                    error_str = str(e)
-                    logger.warning(error_str)
+                    logger.warning(str(e))
                 else:
                     rowcount = cur.rowcount
 
