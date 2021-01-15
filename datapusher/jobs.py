@@ -567,13 +567,12 @@ def push_to_datastore(task_id, input, dry_run=False):
             cur.execute('TRUNCATE TABLE \"{resource_id}\";'.format(resource_id=resource_id))
 
             copy_sql = ("COPY \"{resource_id}\" ({column_names}) FROM STDIN "
-                        "WITH (DELIMITER '{delimiter}', FORMAT csv, FREEZE 1, "
-                        "HEADER 1, ENCODING '{encoding}');").format(
+                        "WITH (DELIMITER '{delimiter}', FORMAT CSV, FREEZE 1, "
+                        "HEADER 1, ENCODING 'UTF8');").format(
                             resource_id=resource_id,
                             column_names=', '.join(['"{}"'.format(h['id'])
                                                     for h in headers_dicts]),
-                            delimiter=delimiter,
-                            encoding='UTF8')
+                            delimiter=delimiter)
             logger.info(copy_sql)
             with open(tmp.name, 'rb') as f:
                 try:
@@ -584,6 +583,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                     rowcount = cur.rowcount
 
             raw_connection.commit()
+            # this is needed to issue a VACUUM ANALYZE
             raw_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
             cur = raw_connection.cursor()
             logger.info('Vacuum Analyzing table...')
