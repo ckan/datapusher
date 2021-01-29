@@ -365,7 +365,7 @@ def push_to_datastore(task_id, input, dry_run=False):
         headers['Authorization'] = api_key
     try:
         kwargs = {'headers': headers, 'timeout': DOWNLOAD_TIMEOUT,
-                  'verify': SSL_TIMEOUT, 'stream': True}
+                  'verify': SSL_VERIFY, 'stream': True}
         if USE_PROXY:
             kwargs['proxies'] = {'http': DOWNLOAD_PROXY, 'https': DOWNLOAD_PROXY}
         response = requests.get(url, **kwargs)
