@@ -113,7 +113,7 @@ Supervisor to keep the process up.
 
 At this point you can run DataPusher with the following command:
 
-    /usr/lib/ckan/datapusher/bin/uwsgi -i /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher-uswgi.ini
+    /usr/lib/ckan/datapusher/bin/uwsgi -i /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher-uwsgi.ini
 
 
 *Note*: If you are installing the DataPusher on a different location than the default
@@ -228,4 +228,3 @@ It is open and licensed under the GNU Affero General Public License (AGPL) v3.0
 whose full text may be found at:
 
 [http://www.fsf.org/licensing/licenses/agpl-3.0.html]()
-
