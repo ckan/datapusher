@@ -80,12 +80,10 @@ RUN pip install --no-index --find-links=/wheels uwsgi && \
     # Change uwsgi http worker to listen on all interfaces
     sed 's/127.0.0.1/0.0.0.0/g' -i ${APP_DIR}/datapusher-uwsgi.ini && \
     # Change ownership to app user
-    chown -R www-data:www-data ${APP_DIR} && \
+    # chown -R www-data:www-data ${APP_DIR} && \
     # Remove wheels
     rm -rf /wheels
 
 EXPOSE 8800
-
-USER www-data
 
 CMD $APP_DIR/bin/uwsgi -i $WSGI_CONFIG
