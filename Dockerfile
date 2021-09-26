@@ -1,7 +1,7 @@
 #############
 ### Build ###
 #############
-FROM alpine:3.12 as build
+FROM python:3-alpine as build
 
 # Set src dirs
 ENV SRC_DIR=/srv/app/src
@@ -11,19 +11,13 @@ WORKDIR ${SRC_DIR}
 
 # Packages to build datapusher
 RUN apk add --no-cache \
-        python3 \
         curl \
-        gcc \
-        make \
-        g++ \
         autoconf \
         automake \
         libtool \
         git \
         musl-dev \
         python3-dev \
-        libffi-dev \
-        openssl-dev \
         pcre-dev \
         libxml2-dev \
         libxslt-dev
@@ -36,10 +30,6 @@ COPY ./README.md ${SRC_DIR}/README.md
 COPY ./setup.py ${SRC_DIR}/setup.py
 COPY ./requirements.txt ${SRC_DIR}/requirements.txt
 COPY ./datapusher ${SRC_DIR}/datapusher
-
-# Install pip
-RUN curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-    python3 ${SRC_DIR}/get-pip.py
 
 # Fetch and build datapusher and requirements
 RUN pip wheel --wheel-dir=/wheels .
@@ -55,7 +45,7 @@ RUN pip wheel --wheel-dir=/wheels uwsgi==2.0.19.1
 ############
 ### MAIN ###
 ############
-FROM alpine:3.12 as main
+FROM python:3-alpine as main
 
 LABEL maintainer="Keitaro Inc <info@keitaro.com>"
 
@@ -69,7 +59,6 @@ COPY ./deployment/datapusher-uwsgi.ini ${WSGI_CONFIG}
 WORKDIR ${APP_DIR}
 
 RUN apk add --no-cache \
-        python3 \
         curl \
         pcre \
         libmagic \
