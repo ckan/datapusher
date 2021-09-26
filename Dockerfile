@@ -35,7 +35,7 @@ WORKDIR ${APP_DIR}/src
 COPY ./README.md .
 COPY ./setup.py .
 COPY ./requirements.txt .
-COPY ./datapusher .
+COPY ./datapusher ./datapusher
 
 # Fetch and build datapusher and requirements
 RUN pip wheel --wheel-dir=/wheels .
