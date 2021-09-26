@@ -32,6 +32,7 @@ COPY ./requirements.txt ${SRC_DIR}/requirements.txt
 COPY ./datapusher ${SRC_DIR}/datapusher
 
 # Fetch and build datapusher and requirements
+RUN pip wheel --wheel-dir=/wheels lxml
 RUN pip wheel --wheel-dir=/wheels .
 RUN pip wheel --wheel-dir=/wheels -r requirements.txt
 
