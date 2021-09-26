@@ -55,7 +55,7 @@ RUN pip wheel --wheel-dir=/wheels uwsgi==2.0.19.1
 ############
 ### MAIN ###
 ############
-FROM alpine:3.12
+FROM alpine:3.12 as main
 
 LABEL maintainer="Keitaro Inc <info@keitaro.com>"
 
