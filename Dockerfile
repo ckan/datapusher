@@ -11,16 +11,17 @@ WORKDIR ${SRC_DIR}
 
 # Packages to build datapusher
 RUN apk add --no-cache \
-        curl \
-        autoconf \
-        automake \
-        libtool \
-        git \
-        musl-dev \
-        python3-dev \
-        pcre-dev \
-        libxml2-dev \
-        libxslt-dev
+    curl \
+    g++ \
+    autoconf \
+    automake \
+    libtool \
+    git \
+    musl-dev \
+    python3-dev \
+    pcre-dev \
+    libxml2-dev \
+    libxslt-dev
 
 # Create the src directory
 RUN mkdir -p ${SRC_DIR}
@@ -32,7 +33,6 @@ COPY ./requirements.txt ${SRC_DIR}/requirements.txt
 COPY ./datapusher ${SRC_DIR}/datapusher
 
 # Fetch and build datapusher and requirements
-RUN pip wheel --wheel-dir=/wheels lxml
 RUN pip wheel --wheel-dir=/wheels .
 RUN pip wheel --wheel-dir=/wheels -r requirements.txt
 
