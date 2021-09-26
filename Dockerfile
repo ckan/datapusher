@@ -71,13 +71,7 @@ RUN apk add --no-cache \
 COPY --from=build /wheels /wheels
 
 # Create a local user and group to run the app
-RUN addgroup -g 92 -S www-data && \
-    adduser -u 92 -h ${APP_DIR} -H -D -S -G www-data www-data && \
-    # Setup a virtualenv
-    python3 -m venv ${APP_DIR} && \
-    ln -s /usr/lib/ckan/datapusher/bin/pip /usr/bin/pip && \
-    # Install uwsgi
-    pip install --no-index --find-links=/wheels uwsgi && \
+RUN pip install --no-index --find-links=/wheels uwsgi && \
     # Install datapusher
     pip install --no-index --find-links=/wheels datapusher && \
     pip install --no-index --find-links=/wheels -r /wheels/requirements.txt && \
