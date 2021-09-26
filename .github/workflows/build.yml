@@ -18,25 +18,25 @@ env:
   GIT_BASE: ghcr.io/opticrd
 
 jobs:
-  versioning:
-    runs-on: ubuntu-latest
+  # versioning:
+  #   runs-on: ubuntu-latest
 
-    outputs:
-      version: ${{ steps.set.outputs.version }}
-    steps:
-      - name: Getting API Version
-        id: get
-        uses: actions/github-script@v4
-        with:
-          result-encoding: string
-          script: |
-            return context.payload.release.tag_name.substring(0,2)
-      - name: Setting API Version
-        id: set
-        run: echo "::set-output name=version::${{ steps.get.outputs.result }}"
+  #   outputs:
+  #     version: ${{ steps.set.outputs.version }}
+  #   steps:
+  #     - name: Getting API Version
+  #       id: get
+  #       uses: actions/github-script@v4
+  #       with:
+  #         result-encoding: string
+  #         script: |
+  #           return context.payload.release.tag_name.substring(0,2)
+  #     - name: Setting API Version
+  #       id: set
+  #       run: echo "::set-output name=version::${{ steps.get.outputs.result }}"
 
   build:
-    needs: ['versioning']
+    # needs: ['versioning']
     runs-on: ubuntu-latest
 
     steps:
