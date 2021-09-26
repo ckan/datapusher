@@ -18,6 +18,7 @@ RUN apk add --no-cache \
     libtool \
     git \
     musl-dev \
+    libffi-dev \
     python3-dev \
     pcre-dev \
     libxml2-dev \
