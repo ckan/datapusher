@@ -4,34 +4,38 @@
 FROM python:3-alpine as build
 
 # Set src dirs
-ENV SRC_DIR=/srv/app/src
-ENV PIP_SRC=${SRC_DIR}
+ENV APP_DIR=/srv/app
+ENV PIP_SRC=${APP_DIR}
+ENV JOB_CONFIG ${APP_DIR}/datapusher_settings.py
 
-WORKDIR ${SRC_DIR}
+WORKDIR ${APP_DIR}
 
 # Packages to build datapusher
 RUN apk add --no-cache \
     curl \
-    g++ \
-    autoconf \
-    automake \
-    libtool \
+    libffi-dev \
+    libressl-dev \
+    # Temporary packages to build DataPusher requirements
+    && apk add --no-cache --virtual .build-deps \
+    gcc \
     git \
     musl-dev \
-    libffi-dev \
     python3-dev \
-    pcre-dev \
     libxml2-dev \
-    libxslt-dev
+    libxslt-dev \
+    libmagic \
+    openssl-dev \
+    cargo
 
 # Create the src directory
-RUN mkdir -p ${SRC_DIR}
+RUN mkdir -p ${APP_DIR}/src
+WORKDIR ${APP_DIR}/src
 
-# Copy datapusher to SRC_DIR
-COPY ./README.md ${SRC_DIR}/README.md
-COPY ./setup.py ${SRC_DIR}/setup.py
-COPY ./requirements.txt ${SRC_DIR}/requirements.txt
-COPY ./datapusher ${SRC_DIR}/datapusher
+# Copy datapusher to APP_DIR
+COPY ./README.md .
+COPY ./setup.py .
+COPY ./requirements.txt .
+COPY ./datapusher .
 
 # Fetch and build datapusher and requirements
 RUN pip wheel --wheel-dir=/wheels .
@@ -40,9 +44,8 @@ RUN pip wheel --wheel-dir=/wheels -r requirements.txt
 # Copy requirements.txt to /wheels
 RUN cp requirements.txt /wheels/requirements.txt
 
-# Get uwsgi
-RUN pip wheel --wheel-dir=/wheels uwsgi==2.0.19.1
-
+RUN apk del .build-deps && \
+    rm -rf ${APP_DIR}/src
 
 ############
 ### MAIN ###
@@ -55,35 +58,45 @@ ENV APP_DIR=/usr/lib/ckan/datapusher
 ENV WSGI_FILE ${APP_DIR}/src/datapusher/deployment/datapusher.wsgi
 ENV WSGI_CONFIG ${APP_DIR}/datapusher-uwsgi.ini
 
-COPY ./deployment/datapusher.wsgi ${WSGI_FILE}
-COPY ./deployment/datapusher-uwsgi.ini ${WSGI_CONFIG}
+RUN apk add --no-cache \
+    curl \
+    git \
+    pcre \
+    libmagic \
+    libxslt \
+    libxml2 \
+    uwsgi \
+    uwsgi-http \
+    uwsgi-corerouter \
+    uwsgi-python
 
 WORKDIR ${APP_DIR}
 
-RUN apk add --no-cache \
-        curl \
-        pcre \
-        libmagic \
-        libxslt \
-        libxml2
+COPY ./deployment/datapusher.wsgi .
+COPY ./deployment/datapusher-uwsgi.ini .
 
 # Get artifacts from build stages
 COPY --from=build /wheels /wheels
 
 # Create a local user and group to run the app
-RUN pip install --no-index --find-links=/wheels uwsgi && \
-    # Install datapusher
-    pip install --no-index --find-links=/wheels datapusher && \
-    pip install --no-index --find-links=/wheels -r /wheels/requirements.txt && \
+RUN pip install --no-index --no-cache-dir --find-links=/wheels datapusher && \
+    pip install --no-index --no-cache-dir --find-links=/wheels -r /wheels/requirements.txt && \
     # Set timezone
     echo "UTC" >  /etc/timezone && \
     # Change uwsgi http worker to listen on all interfaces
     sed 's/127.0.0.1/0.0.0.0/g' -i ${APP_DIR}/datapusher-uwsgi.ini && \
-    # Change ownership to app user
-    # chown -R www-data:www-data ${APP_DIR} && \
+    # Remove default values in ini file
+    sed -i '/http/d' ${APP_DIR}/datapusher-uwsgi.ini && \
+    sed -i '/wsgi-file/d' ${APP_DIR}/datapusher-uwsgi.ini && \
+    sed -i '/virtualenv/d' ${APP_DIR}/datapusher-uwsgi.ini && \
     # Remove wheels
     rm -rf /wheels
 
+# Create a local user and group to run the app
+RUN addgroup -g 92 -S www-data && \
+    adduser -u 92 -h /srv/app -H -D -S -G www-data www-data
+
 EXPOSE 8800
 
-CMD $APP_DIR/bin/uwsgi -i $WSGI_CONFIG
+CMD ["sh", "-c", \
+    "uwsgi --plugins=http,python --http=0.0.0.0:8800 --socket=/tmp/uwsgi.sock --ini=`echo ${APP_DIR}`/datapusher-uwsgi.ini --wsgi-file=`echo ${APP_DIR}`/datapusher.wsgi"]
