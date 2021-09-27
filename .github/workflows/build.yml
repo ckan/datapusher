@@ -113,6 +113,6 @@ jobs:
       - name: Run ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }} tests
         run: |
           docker pull ${{ env.GIT_BASE }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}:${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}
-          docker run -d -p 127.0.0.1:8800:8800 --network="host" --name datapusher ${{ env.GIT_BASE }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}:${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}
+          docker run -d -p 127.0.0.1:8800:8800 --name datapusher ${{ env.GIT_BASE }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}:${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}
           docker ps | grep -q datapusher
           curl --fail http://localhost:8800/job
