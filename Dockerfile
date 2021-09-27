@@ -78,7 +78,6 @@ COPY ./deployment/datapusher-uwsgi.ini .
 # Get artifacts from build stages
 COPY --from=build /wheels /wheels
 
-# Create a local user and group to run the app
 RUN pip install --no-index --no-cache-dir --find-links=/wheels datapusher && \
     pip install --no-index --no-cache-dir --find-links=/wheels -r /wheels/requirements.txt && \
     # Set timezone
@@ -92,9 +91,8 @@ RUN pip install --no-index --no-cache-dir --find-links=/wheels datapusher && \
     # Remove wheels
     rm -rf /wheels
 
-# Create a local user and group to run the app
-RUN addgroup -g 92 -S www-data && \
-    adduser -u 92 -h /srv/app -H -D -S -G www-data www-data
+# Create a local user to run the app
+RUN adduser -u 92 -h ${APP_DIR} -H -D -S -G www-data www-data
 
 EXPOSE 8800
 
