@@ -29,6 +29,9 @@ setup(
     # Choose your license
     license='AGPL',
 
+    # Supported python distributions
+    python_requires='>=3.6',
+
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
@@ -42,7 +45,6 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
@@ -60,11 +62,15 @@ setup(
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/technical.html#install-requires-vs-requirements-files
-    install_requires=[],
+    install_requires=['argparse',
+                      'certifi',
+                      'ckanserviceprovider==0.0.10',
+                      'html5lib==1.1',
+                      'messytables==0.15.2',
+                      'requests[security]==2.24.0'],
 
     # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
+    # installed, specify them here.
     package_data={
     },
 

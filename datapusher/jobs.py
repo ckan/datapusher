@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 
-
 import json
 import requests
-try:
-    from urllib.parse import urlsplit
-except ImportError:
-    from urlparse import urlsplit
+
+from urllib.parse import urlsplit
 
 import itertools
 import datetime
@@ -220,7 +217,7 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         response = requests.post(search_url,
                                  verify=SSL_VERIFY,
                                  data=json.dumps({'id': resource_id,
-                                         'limit': 0}),
+                                                 'limit': 0}),
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
@@ -341,6 +338,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     except util.JobError as e:
         # try again in 5 seconds just incase CKAN is slow at adding resource
         time.sleep(5)
+        logger.debug('get_resource raised an error, retrying...' + e)
         resource = get_resource(resource_id, ckan_url, api_key)
 
     # check if the resource url_type is a datastore
@@ -419,12 +417,13 @@ def push_to_datastore(task_id, input, dry_run=False):
         table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
     except messytables.ReadError as e:
         # try again with format
+        logger.debug('messytables raised an error, trying with format...' + e)
         tmp.seek(0)
         try:
             format = resource.get('format')
             table_set = messytables.any_tableset(tmp, mimetype=format, extension=format)
-        except:
-            raise util.JobError(e)
+        except util.JobError as e:
+            raise (e)
 
     get_row_set = web.app.config.get('GET_ROW_SET',
                                      lambda table_set: table_set.tables.pop())
@@ -435,7 +434,7 @@ def push_to_datastore(task_id, input, dry_run=False):
     existing_info = None
     if existing:
         existing_info = dict((f['id'], f['info'])
-            for f in existing.get('fields', []) if 'info' in f)
+                             for f in existing.get('fields', []) if 'info' in f)
 
     # Some headers might have been converted from strings to floats and such.
     headers = [str(header) for header in headers]
