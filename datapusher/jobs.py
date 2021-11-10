@@ -352,8 +352,8 @@ def push_to_datastore(task_id, input, dry_run=False):
     url = resource.get('url')
     
     # replace hostname in url
-    if config.get('ckanext.datapusher.ckan_host'):
-        ckan_host = config.get('ckanext.datapusher.ckan_host')
+    if web.app.config.get('CKAN_HOSTNAME'):
+        ckan_host = web.app.config.get('CKAN_HOSTNAME')
         url_parse_reseult = urlparse(url)
         url = urlunparse(url_parse_reseult._replace(netloc=ckan_host))
 
