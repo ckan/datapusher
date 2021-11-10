@@ -1,8 +1,8 @@
 import os
 import uuid
 
-DEBUG = False
-TESTING = False
+DEBUG = True if os.environ.get('DEBUG') else False
+TESTING = True if os.environ.get('TESTING') else False
 SECRET_KEY = str(uuid.uuid4())
 USERNAME = str(uuid.uuid4())
 PASSWORD = str(uuid.uuid4())
@@ -30,3 +30,5 @@ SSL_VERIFY = os.environ.get('DATAPUSHER_SSL_VERIFY', True)
 
 # logging
 #LOG_FILE = '/tmp/ckan_service.log'
+
+CKAN_HOSTNAME = os.environ.get('CKAN_HOSTNAME')
