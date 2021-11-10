@@ -4,9 +4,9 @@
 import json
 import requests
 try:
-    from urllib.parse import urlsplit
+    from urllib.parse import urlsplit, urlparse, urlunparse
 except ImportError:
-    from urlparse import urlsplit
+    from urlparse import urlsplit, urlparse, urlunparse
 
 import itertools
 import datetime
@@ -350,6 +350,13 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # check scheme
     url = resource.get('url')
+    
+    # replace hostname in url
+    if config.get('ckanext.datapusher.ckan_host'):
+        ckan_host = config.get('ckanext.datapusher.ckan_host')
+        url_parse_reseult = urlparse(url)
+        url = urlunparse(url_parse_reseult._replace(netloc=ckan_host))
+
     scheme = urlsplit(url).scheme
     if scheme not in ('http', 'https', 'ftp'):
         raise util.JobError(
