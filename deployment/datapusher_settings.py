@@ -31,4 +31,5 @@ SSL_VERIFY = os.environ.get('DATAPUSHER_SSL_VERIFY', True)
 # logging
 #LOG_FILE = '/tmp/ckan_service.log'
 
+CKAN_SCHEME = os.environ.get('CKAN_SCHEME')
 CKAN_HOSTNAME = os.environ.get('CKAN_HOSTNAME')

@@ -350,7 +350,13 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # check scheme
     url = resource.get('url')
-    
+
+    # replace scheme in url
+    if web.app.config.get('CKAN_SCHEME'):
+        ckan_scheme = web.app.config.get('CKAN_SCHEME')
+        url_parse_reseult = urlparse(url)
+        url = urlunparse(url_parse_reseult._replace(scheme=ckan_scheme))
+
     # replace hostname in url
     if web.app.config.get('CKAN_HOSTNAME'):
         ckan_host = web.app.config.get('CKAN_HOSTNAME')
