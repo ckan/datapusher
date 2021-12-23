@@ -163,6 +163,16 @@ added to the `[app:main]` section of your CKAN configuration file :
 
     ckan.datapusher.url = http://127.0.0.1:8800/
 
+Must be also configured the authentication using jwt tokens, modifying the following CKAN configurations:
+
+    api_token.jwt.encode.secret = string:samerandomstring
+    api_token.jwt.decode.secret = string:samerandomstring
+
+Then generating a new JWT token in the Administration section for the user default (the user with the same name of site_id)
+which is used by datapusher and configuring the generated token with this configuration in the CKAN ini:
+
+    ckan.datapusher.token = adsadasdsads.sdsad____
+
 There are other CKAN configuration options that allow to customize the CKAN - DataPusher
 integation. Please refer to the [DataPusher Settings](https://docs.ckan.org/en/latest/maintaining/configuration.html#datapusher-settings) section in the CKAN documentation for more details.
 
