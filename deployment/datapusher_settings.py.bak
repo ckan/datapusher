@@ -27,6 +27,5 @@ DOWNLOAD_TIMEOUT = int(os.environ.get('DATAPUSHER_DOWNLOAD_TIMEOUT', '30'))
 
 # Verify SSL (Prevent overlapping with CKAN SSL_VERIFY)
 DATAPUSHER_SSL_VERIFY = os.environ.get('DATAPUSHER_SSL_VERIFY', True)
-
 # logging
 #LOG_FILE = '/tmp/ckan_service.log'

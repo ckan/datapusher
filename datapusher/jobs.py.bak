@@ -16,6 +16,7 @@ import decimal
 import hashlib
 import time
 import tempfile
+import sys
 
 import messytables
 
