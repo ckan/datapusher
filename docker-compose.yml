@@ -1,0 +1,27 @@
+# docker-compose build && docker-compose up -d
+version: "3"
+
+volumes:
+  datapusher:
+  #datapusher_logs:
+
+services:
+  datapusher:
+    restart: always
+    container_name: datapusher
+    build:
+      context: .
+    ports:
+      - "0.0.0.0:8800:8800"
+    environment:
+      - DATAPUSHER_HOST=0.0.0.0
+      - DATAPUSHER_PORT=8800
+      - DATAPUSHER_SQLALCHEMY_DATABASE_URI=sqlite:////tmp/job_store.db
+      - DATAPUSHER_MAX_CONTENT_LENGTH=1024000
+      - DATAPUSHER_CHUNK_SIZE=16384
+      - DATAPUSHER_CHUNK_INSERT_ROWS=250
+      - DATAPUSHER_DOWNLOAD_TIMEOUT=30
+      - SSL_VERIFY=True
+    volumes:
+      - datapusher:/usr/lib/ckan/datapusher/src
+      #- datapusher_logs:/tmp
