@@ -29,7 +29,7 @@ def get_static_file(filename):
 
 class TestImport():
     @classmethod
-    def setup_class(cls):
+    def setUpClass(cls):
         cls.host = 'www.ckan.org'
         cls.api_key = 'my-key'
         cls.resource_id = 'foo-bar-42'
