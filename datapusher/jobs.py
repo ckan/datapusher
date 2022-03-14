@@ -39,6 +39,9 @@ CHUNK_INSERT_ROWS = web.app.config.get('CHUNK_INSERT_ROWS') or 250
 DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
 COPY_MODE_SIZE = web.app.config.get('COPY_MODE_SIZE') or 0
 COPY_WRITE_ENGINE_URL = web.app.config.get('COPY_WRITE_ENGINE_URL')
+USE_PROXY = 'DOWNLOAD_PROXY' in web.app.config
+if USE_PROXY:
+    DOWNLOAD_PROXY = web.app.config.get('DOWNLOAD_PROXY')
 
 if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
     SSL_VERIFY = False
@@ -368,13 +371,11 @@ def push_to_datastore(task_id, input, dry_run=False):
         # otherwise we won't get file from private resources
         headers['Authorization'] = api_key
     try:
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=DOWNLOAD_TIMEOUT,
-            verify=SSL_VERIFY,
-            stream=True,  # just gets the headers for now
-        )
+        kwargs = {'headers': headers, 'timeout': DOWNLOAD_TIMEOUT,
+                  'verify': SSL_VERIFY, 'stream': True}
+        if USE_PROXY:
+            kwargs['proxies'] = {'http': DOWNLOAD_PROXY, 'https': DOWNLOAD_PROXY}
+        response = requests.get(url, **kwargs)
         response.raise_for_status()
 
         cl = response.headers.get('content-length')
