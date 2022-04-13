@@ -1,0 +1,27 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      matrix:
+        python-version: [2.7, 3.6, 3.7, 3.8, 3.9]
+      fail-fast: false
+    name: Python ${{ matrix.python-version }} 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install requirements (Python 2)
+        if: ${{ matrix.python-version == '2.7' }}
+        run: pip install -r requirements-dev-py2.txt && pip install .
+      - name: Install requirements (Python 3)
+        if: ${{ matrix.python-version != '2.7' }}
+        run: pip install -r requirements-dev.txt && pip install .
+      - name: Run tests
+        run: pytest --cov=datapusher --cov-append --cov-report=xml --disable-warnings tests
+      - name: Upload coverage report to codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml

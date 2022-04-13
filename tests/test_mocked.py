@@ -5,8 +5,8 @@ Test the whole datapusher but mock the CKAN datastore.
 
 import os
 import json
-import unittest
 
+import pytest
 import httpretty
 
 import datapusher.main as main
@@ -27,7 +27,7 @@ def get_static_file(filename):
     return open(join_static_path(filename)).read()
 
 
-class TestImport(unittest.TestCase):
+class TestImport():
     @classmethod
     def setup_class(cls):
         cls.host = 'www.ckan.org'
@@ -110,4 +110,5 @@ class TestImport(unittest.TestCase):
             }
         }
 
-        self.assertRaises(util.JobError, jobs.push_to_datastore, 'fake_id', data)
+        with pytest.raises(util.JobError):
+            jobs.push_to_datastore('fake_id', data)
