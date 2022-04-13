@@ -29,4 +29,5 @@ DOWNLOAD_TIMEOUT = int(os.environ.get('DATAPUSHER_DOWNLOAD_TIMEOUT', '30'))
 SSL_VERIFY = os.environ.get('DATAPUSHER_SSL_VERIFY', True)
 
 # logging
-#LOG_FILE = '/tmp/ckan_service.log'
+LOG_FILE = os.environ.get('DATAPUSHER_LOG_FILE', '/tmp/ckan_service.log')
+STDERR = bool(int(os.environ.get('DATAPUSHER_STDERR', '1')))
