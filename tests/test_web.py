@@ -6,7 +6,6 @@ configuration and the jobs are loaded.
 
 import os
 import json
-from nose.tools import assert_equal
 
 import datapusher.main as main
 
@@ -21,5 +20,5 @@ class TestWeb():
     def test_status(self):
         rv = app.get('/status')
         result_dict = json.loads(rv.data)
-        assert_equal(result_dict['job_types'], ['push_to_datastore'])
-        assert_equal(result_dict['name'], 'datapusher')
+        assert result_dict['job_types'] == ['push_to_datastore']
+        assert result_dict['name'] == 'datapusher'

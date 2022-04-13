@@ -67,7 +67,7 @@ If you need to change the host or port, copy `deployment/datapusher_settings.py`
 
 To run the tests:
 
-    nosetests
+    pytest
 
 ## Production deployment
 
