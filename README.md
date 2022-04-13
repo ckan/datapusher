@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/ckan/datapusher.png?branch=master)](https://travis-ci.org/ckan/datapusher)
-[![Coverage Status](https://coveralls.io/repos/ckan/datapusher/badge.png?branch=master)](https://coveralls.io/r/ckan/datapusher?branch=master)
+[![Tests](https://github.com/ckan/datapusher/actions/workflows/test.yml/badge.svg)](https://github.com/ckan/datapusher/actions/workflows/test.yml)
 [![Latest Version](https://img.shields.io/pypi/v/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
 [![Downloads](https://img.shields.io/pypi/dm/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/datapusher.svg)](https://pypi.python.org/pypi/datapusher/)
