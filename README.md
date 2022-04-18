@@ -168,7 +168,11 @@ integation. Please refer to the [DataPusher Settings](https://docs.ckan.org/en/l
 
 ### DataPusher Configuration
 
-The DataPusher instance is configured in the `deployment/datapusher_settings.py` file.
+The DataPusher instance is configured in the `deployment/datapusher_settings.py`
+file. The location of this file can be adjusted using the `JOB_CONFIG`
+environment variable which should provide an absolute path to a python-formatted
+config file.
+
 Here's a summary of the options available.
 
 | Name | Default | Description |
