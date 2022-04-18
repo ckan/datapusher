@@ -34,7 +34,27 @@ def main():
     args = argparser.parse_args()
 
     os.environ['JOB_CONFIG'] = os.path.abspath(args.config.name)
+
     serve()
+
+
+def initdb():
+    import argparse
+
+    argparser = argparse.ArgumentParser(description='Initializes de database')
+
+    argparser.add_argument('config', metavar='CONFIG', type=argparse.FileType('r'),
+                            help='configuration file')
+
+    args = argparser.parse_args()
+
+    os.environ['JOB_CONFIG'] = os.path.abspath(args.config.name)
+
+    import ckanserviceprovider.db as servicedb
+
+    web._configure_app(web.app)
+    servicedb.init(web.app.config['SQLALCHEMY_DATABASE_URI'])
+
 
 if __name__ == '__main__':
     main()
