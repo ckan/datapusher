@@ -508,8 +508,8 @@ def push_to_datastore(task_id, input, dry_run=False):
     for i, chunk in enumerate(chunky(result, CHUNK_INSERT_ROWS)):
         records, is_it_the_last_chunk = chunk
         count += len(records)
-        logger.info('Saving chunk {number} {is_last}'.format(
-            number=i, is_last='(last)' if is_it_the_last_chunk else ''))
+        logger.info('Saving records {number} - {record}'.format(
+            number=1, record=count if is_it_the_last_chunk else ''))
         send_resource_to_datastore(resource, headers_dicts, records,
                                    is_it_the_last_chunk, api_key, ckan_url)
 
