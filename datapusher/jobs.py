@@ -393,6 +393,9 @@ def push_to_datastore(task_id, input, dry_run=False):
             m.update(chunk)
 
         ct = response.headers.get('content-type', '').split(';', 1)[0]
+        
+        if ct == 'application/pdf':
+            raise util.JobError('Pdf file is detected. DataPusher cannot Push Pdf file to DataStore')
 
     except requests.HTTPError as e:
         raise HTTPError(
