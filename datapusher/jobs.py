@@ -456,6 +456,13 @@ def push_to_datastore(task_id, input, dry_run=False):
     row_set.register_processor(messytables.types_processor(types))
 
     headers = [header.strip() for header in headers if header.strip()]
+    
+    total_headers_count=len(headers)
+    column_limit=1600
+    
+    if total_headers_count>column_limit:
+        raise util.JobError('Headers value is exceeded file cannot be uploaded')
+        
     headers_set = set(headers)
 
     def row_iterator():
