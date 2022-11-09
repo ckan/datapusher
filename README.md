@@ -161,6 +161,10 @@ In order to tell CKAN where this webservice is located, the following must be
 added to the `[app:main]` section of your CKAN configuration file :
 
     ckan.datapusher.url = http://127.0.0.1:8800/
+   
+Starting from CKAN 2.10, DataPusher requires a valid API token to operate (see [the documentation on API tokens](https://docs.ckan.org/en/latest/api/index.html#authentication-and-api-tokens)), and will fail to start if the following option is not set:
+
+    ckan.datapusher.api_token = <api_token>
 
 There are other CKAN configuration options that allow to customize the CKAN - DataPusher
 integation. Please refer to the [DataPusher Settings](https://docs.ckan.org/en/latest/maintaining/configuration.html#datapusher-settings) section in the CKAN documentation for more details.
