@@ -16,6 +16,10 @@ import datetime
 
 import httpretty
 import pytest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import datapusher.main as main
 import datapusher.jobs as jobs
@@ -546,3 +550,90 @@ class TestImport():
         # res should be None because we didn't get to the part that
         # returns something
         assert not res, res
+
+    @httpretty.activate
+    def test_download_resource_with_callbach_url_base_on_uploads(self):
+        """
+        Rather than re-registering all URLs, we'll consider the www.ckan.org host
+        the internal host set via ckan.datapusher.callback_url_base, and ckan.example.org
+        the public host used in the resource URLs
+        """
+
+        source_url, res_url = self.register_urls(
+            source_url='http://ckan.example.org/dataset/some_dataset/resource/{}/download'.format(self.resource_id)
+        )
+        httpretty.register_uri(
+            httpretty.POST, res_url,
+            body=json.dumps({
+                'success': True,
+                'result': {
+                    'id': '32h4345k34h5l345',
+                    'name': 'short name',
+                    'url': source_url,
+                    'format': 'csv',
+                    'url_type': 'upload',
+                }
+            }),
+            content_type='application/json')
+
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+	
+        with mock.patch('datapusher.jobs.get_data_response') as m:
+
+            m.side_effect = RuntimeError()
+            try:
+                res = jobs.push_to_datastore('fake_id', data, True)
+            except RuntimeError:
+
+                assert m.called
+                download_url = m.call_args[0][0]
+                assert download_url[:download_url.index('/dataset')] == 'http://www.ckan.org'
+
+    @httpretty.activate
+    def test_download_resource_with_callbach_url_base_on_external(self):
+        """
+        Rather than re-registering all URLs, we'll consider the www.ckan.org host
+        the internal host set via ckan.datapusher.callback_url_base, and ckan.example.org
+        the public host used in the resource URLs
+        """
+
+        source_url, res_url = self.register_urls()
+        httpretty.register_uri(
+            httpretty.POST, res_url,
+            body=json.dumps({
+                'success': True,
+                'result': {
+                    'id': '32h4345k34h5l345',
+                    'name': 'short name',
+                    'url': source_url,
+                    'format': 'csv',
+                }
+            }),
+            content_type='application/json')
+
+        data = {
+            'api_key': self.api_key,
+            'job_type': 'push_to_datastore',
+            'metadata': {
+                'ckan_url': 'http://%s/' % self.host,
+                'resource_id': self.resource_id
+            }
+        }
+	
+        with mock.patch('datapusher.jobs.get_data_response') as m:
+
+            m.side_effect = RuntimeError()
+            try:
+                res = jobs.push_to_datastore('fake_id', data, True)
+            except RuntimeError:
+
+                assert m.called
+                download_url = m.call_args[0][0]
+                assert download_url.startswith('http://www.source.org')

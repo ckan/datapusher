@@ -294,6 +294,13 @@ def get_resource(resource_id, ckan_url, api_key):
     return r.json()['result']
 
 
+def get_data_response(url, **kwargs):
+
+    response = requests.get(url, **kwargs)
+
+    return response
+
+
 def validate_input(input):
     # Especially validate metdata which is provided by the user
     if 'metadata' not in input:
@@ -356,6 +363,13 @@ def push_to_datastore(task_id, input, dry_run=False):
             'Only http, https, and ftp resources may be fetched.'
         )
 
+    # if it's a local upload, check if we need to use an internal host instead of
+    # the public one on the resource url
+    if resource.get('url_type') == 'upload':
+
+        if data.get('ckan_url') and url[:url.index('/dataset')] != data['ckan_url'].rstrip('/'):
+            url = data['ckan_url'].rstrip('/') + url[url.index('/dataset'):]
+
     # fetch the resource data
     logger.info('Fetching from: {0}'.format(url))
     headers = {}
@@ -368,7 +382,7 @@ def push_to_datastore(task_id, input, dry_run=False):
                   'verify': SSL_VERIFY, 'stream': True}
         if USE_PROXY:
             kwargs['proxies'] = {'http': DOWNLOAD_PROXY, 'https': DOWNLOAD_PROXY}
-        response = requests.get(url, **kwargs)
+        response = get_data_response(url, **kwargs)
         response.raise_for_status()
 
         cl = response.headers.get('content-length')
