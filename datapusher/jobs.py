@@ -414,7 +414,7 @@ def pandas_sniff_algorithm( tmp, ct, resource_id, api_key, ckan_url, ext='CSV' )
         raise util.JobError(e)
 
     # handle odd column names
-    if ('Unnamed: 0' in dataset.columns):
+    if (dataset.columns[0] == 'Unnamed: 0'):
         dataset.drop( ['Unnamed: 0'], axis=1, inplace=True )    # almost certainly an index column, thus redundant
 
     dataset.columns = [sanitize_column_name(x) for x in dataset.columns]    # rename the source!
