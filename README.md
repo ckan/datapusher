@@ -36,6 +36,11 @@ The original author of DataPusher was
 Dominik Moritz <dominik.moritz@okfn.org>. For the current list of contributors
 see [github.com/ckan/datapusher/contributors](https://github.com/ckan/datapusher/contributors)
 
+```
+Note: You can also opt for XLoader which is designed as a replacement for DataPusher because it offers ten times the
+      speed and more robustness. To install this please look at the docs here: https://github.com/ckan/ckanext-xloader
+```
+
 ## Development installation
 
 Install the required packages::
