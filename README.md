@@ -96,12 +96,15 @@ Supervisor to keep the process up.
      cd /usr/lib/ckan/datapusher/src
 
      # Clone the source (you should target the latest tagged version)
-     sudo git clone -b 0.0.17 https://github.com/ckan/datapusher.git
+     sudo git clone -b 1.0.0 https://github.com/ckan/datapusher.git
 
      # Install the DataPusher and its requirements
      cd datapusher
      sudo /usr/lib/ckan/datapusher/bin/pip install -r requirements.txt
      sudo /usr/lib/ckan/datapusher/bin/python setup.py develop
+
+     # Initialize the database
+     sudo /usr/lib/ckan/datapusher/bin/datapusher_initdb /usr/lib/ckan/datapusher/src/datapusher/deployment/datapusher_settings.py
 
      # Create a user to run the web service (if necessary)
      sudo addgroup www-data
