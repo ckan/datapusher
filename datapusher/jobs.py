@@ -23,27 +23,22 @@ import ckanserviceprovider.job as job
 import ckanserviceprovider.util as util
 from ckanserviceprovider import web
 
+global_logger = logging.getLogger(__name__)
+global_logger.setLevel(logging.DEBUG)
+
 if locale.getdefaultlocale()[0]:
     lang, encoding = locale.getdefaultlocale()
     locale.setlocale(locale.LC_ALL, locale=(lang, encoding))
 else:
     locale.setlocale(locale.LC_ALL, '')
 
-MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
-CHUNK_SIZE = web.app.config.get('CHUNK_SIZE') or 16384
-CHUNK_INSERT_ROWS = web.app.config.get('CHUNK_INSERT_ROWS') or 250
-DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
-USE_PROXY = 'DOWNLOAD_PROXY' in web.app.config
-if USE_PROXY:
-    DOWNLOAD_PROXY = web.app.config.get('DOWNLOAD_PROXY')
-
-if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
-    SSL_VERIFY = False
-else:
-    SSL_VERIFY = True
-
-if not SSL_VERIFY:
-    requests.packages.urllib3.disable_warnings()
+MAX_CONTENT_LENGTH = None
+CHUNK_SIZE = None
+CHUNK_INSERT_ROWS = None
+DOWNLOAD_TIMEOUT = None
+USE_PROXY = None
+DOWNLOAD_PROXY = None
+SSL_VERIFY = None
 
 _TYPE_MAPPING = {
     'String': 'text',
@@ -57,13 +52,47 @@ _TYPE_MAPPING = {
 _TYPES = [messytables.StringType, messytables.DecimalType,
           messytables.IntegerType, messytables.DateUtilType]
 
-TYPE_MAPPING = web.app.config.get('TYPE_MAPPING', _TYPE_MAPPING)
-TYPES = web.app.config.get('TYPES', _TYPES)
-
 DATASTORE_URLS = {
     'datastore_delete': '{ckan_url}/api/action/datastore_delete',
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
+              
+def init():
+    """
+    Updates declared global variables with values taken from datapusher_settings.py user configuration.
+    datapusher_settings.py must have been loaded first (so call it after web.init()), else it won't
+    be taken into account.
+
+    """
+    global_logger.info("init()")
+    # 'global' keyword must be used else global variables won't change :
+    global MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH = web.app.config.get('MAX_CONTENT_LENGTH') or 10485760
+    global_logger.info("MAX_CONTENT_LENGTH=%s", str(MAX_CONTENT_LENGTH))
+    global CHUNK_SIZE
+    CHUNK_SIZE = web.app.config.get('CHUNK_SIZE') or 16384
+    global CHUNK_INSERT_ROWS
+    CHUNK_INSERT_ROWS = web.app.config.get('CHUNK_INSERT_ROWS') or 250
+    global DOWNLOAD_TIMEOUT
+    DOWNLOAD_TIMEOUT = web.app.config.get('DOWNLOAD_TIMEOUT') or 30
+    global USE_PROXY
+    USE_PROXY = 'DOWNLOAD_PROXY' in web.app.config
+    if USE_PROXY:
+        DOWNLOAD_PROXY = web.app.config.get('DOWNLOAD_PROXY')
+  
+    global SSL_VERIFY
+    if web.app.config.get('SSL_VERIFY') in ['False', 'FALSE', '0', False, 0]:
+        SSL_VERIFY = False
+    else:
+        SSL_VERIFY = True
+
+    if not SSL_VERIFY:
+        requests.packages.urllib3.disable_warnings()
+
+    global TYPE_MAPPING
+    TYPE_MAPPING = web.app.config.get('TYPE_MAPPING', _TYPE_MAPPING)
+    global TYPES
+    TYPES = web.app.config.get('TYPES', _TYPES)
 
 
 class HTTPError(util.JobError):
