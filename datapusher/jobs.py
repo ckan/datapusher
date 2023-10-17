@@ -65,6 +65,7 @@ DATASTORE_URLS = {
     'resource_update': '{ckan_url}/api/action/resource_update'
 }
 
+BLACKLIST = web.app.config.get('BLACKLIST_URLS', '').split(' ')
 
 class HTTPError(util.JobError):
     """Exception that's raised if a job fails due to an HTTP problem."""
@@ -362,6 +363,12 @@ def push_to_datastore(task_id, input, dry_run=False):
         raise util.JobError(
             'Only http, https, and ftp resources may be fetched.'
         )
+        
+    for black_url in BLACKLIST:
+        if black_url and black_url in url:
+            raise util.JobError(
+                'Resouce can not be fetched - Given URL is blacklisted: %s' % url
+            )
 
     # if it's a local upload, check if we need to use an internal host instead of
     # the public one on the resource url
