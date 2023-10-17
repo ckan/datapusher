@@ -184,7 +184,7 @@ Here's a summary of the options available.
 | CHUNK_SIZE | '16384' | Chunk size when processing the data file |
 | CHUNK_INSERT_ROWS | '250' | Number of records to send a request to datastore |
 | DOWNLOAD_TIMEOUT | '30' | Download timeout for requesting the file |
-| SSL_VERIFY | False | Do not validate SSL certificates when requesting the data file (*Warning*: Do not use this setting in production) |
+| DATAPUSHER_SSL_VERIFY | True | Do not validate SSL certificates when requesting the data file (*Warning*: Do not use this setting in production). Was used a different name from ckan SSL_VERIFY to prevent overlapping with the value set in the ckan imports |
 | TYPES | [messytables.StringType, messytables.DecimalType, messytables.IntegerType, messytables.DateUtilType] | [Messytables][] types used internally, can be modified to customize the type guessing |
 | TYPE_MAPPING | {'String': 'text', 'Integer': 'numeric', 'Decimal': 'numeric', 'DateUtil': 'timestamp'} | Internal Messytables type mapping |
 | LOG_FILE | `/tmp/ckan_service.log` | Where to write the logs. Use an empty string to disable |
