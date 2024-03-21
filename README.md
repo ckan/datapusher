@@ -62,7 +62,7 @@ By default DataPusher should be running at the following port:
     http://localhost:8800/
 
 If you need to change the host or port, copy `deployment/datapusher_settings.py` to
-`deployment/datapusher_local_settings.py` and modify the file to suit your needs. Also if running a production setup, make sure that the host and port matcht the `http` settings in the uWSGI configuration.
+`deployment/datapusher_local_settings.py` and modify the file to suit your needs. Also if running a production setup, make sure that the host and port match the `http` settings in the uWSGI configuration.
 
 To run the tests:
 
@@ -73,7 +73,7 @@ To run the tests:
 *Note*: If you installed CKAN via a [package install](http://docs.ckan.org/en/latest/install-from-package.html), the DataPusher has already been installed and deployed for you. You can skip directly to the [Configuring](#configuring) section.
 
 
-Thes instructions assume you already have CKAN installed on this server in the default
+These instructions assume you already have CKAN installed on this server in the default
 location described in the CKAN install documentation
 (`/usr/lib/ckan/default`).  If this is correct you should be able to run the
 following commands directly, if not you will need to adapt the previous path to
@@ -182,7 +182,7 @@ Here's a summary of the options available.
 | SQLALCHEMY_DATABASE_URI | 'sqlite:////tmp/job_store.db' | SQLAlchemy Database URL. See note about database backend below. |
 | MAX_CONTENT_LENGTH | '1024000' | Max size of files to process in bytes |
 | CHUNK_SIZE | '16384' | Chunk size when processing the data file |
-| CHUNK_INSERT_ROWS | '250' | Number of records to send a request to datastore |
+| CHUNK_INSERT_ROWS | '250' | Number of records to send per request to datastore |
 | DOWNLOAD_TIMEOUT | '30' | Download timeout for requesting the file |
 | SSL_VERIFY | False | Do not validate SSL certificates when requesting the data file (*Warning*: Do not use this setting in production) |
 | TYPES | [messytables.StringType, messytables.DecimalType, messytables.IntegerType, messytables.DateUtilType] | [Messytables][] types used internally, can be modified to customize the type guessing |
@@ -191,7 +191,7 @@ Here's a summary of the options available.
 | STDERR | `True` | Log to stderr? |
 
 
-Most of the configuration options above can be also provided as environment variables prepending the name with `DATAPUSHER_`, eg `DATAPUSHER_SQLALCHEMY_DATABASE_URI`, `DATAPUSHER_PORT`, etc. In the specific case of `DATAPUSHER_STDERR` the possible values are `1` and `0`.
+Most of the configuration options above can also be provided as environment variables prepending the name with `DATAPUSHER_`, eg `DATAPUSHER_SQLALCHEMY_DATABASE_URI`, `DATAPUSHER_PORT`, etc. In the specific case of `DATAPUSHER_STDERR` the possible values are `1` and `0`.
 
 
 By default, DataPusher uses SQLite as the database backend for jobs information. This is fine for local development and sites with low activity, but for sites that need more performance, Postgres should be used as the backend for the jobs database (eg `SQLALCHEMY_DATABASE_URI=postgresql://datapusher_jobs:YOURPASSWORD@localhost/datapusher_jobs`. See also [High Availability Setup](#high-availability-setup). If SQLite is used, its probably a good idea to store the database in a location other than `/tmp`. This will prevent the database being dropped, causing out of sync errors in the CKAN side. A good place to store it is the CKAN storage folder (if DataPusher is installed in the same server), generally in `/var/lib/ckan/`.
