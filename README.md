@@ -7,6 +7,10 @@
 [CKAN Service Provider]: https://github.com/ckan/ckan-service-provider
 [Messytables]: https://github.com/okfn/messytables
 
+> [!CAUTION]
+> **DataPusher is deprecated and no longer maintained**. Please use a more modern replacement like
+> [XLoader](https://github.com/ckan/ckanext-xloader) or [DataPusher+ (DataPusher Plus)](https://github.com/dathere/datapusher-plus).
+
 
 # DataPusher
 
