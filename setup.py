@@ -80,6 +80,7 @@ setup(
     entry_points={
         'console_scripts': [
             'datapusher = datapusher.main:main',
+            'datapusher_initdb = datapusher.main:initdb',
         ],
     },
 )
