@@ -10,6 +10,7 @@ assert(jobs.push_to_datastore)
 
 def serve():
     web.init()
+    jobs.init()
     web.app.run(web.app.config.get('HOST'), web.app.config.get('PORT'))
 
 
