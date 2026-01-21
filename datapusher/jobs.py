@@ -453,6 +453,10 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     # Some headers might have been converted from strings to floats and such.
     headers = [str(header) for header in headers]
+    
+    for i in headers:
+        if i == '':
+            raise util.JobError('Empty header value found')
 
     row_set.register_processor(messytables.headers_processor(headers))
     row_set.register_processor(messytables.offset_processor(offset + 1))
