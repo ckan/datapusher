@@ -1,0 +1,9 @@
+version: '3.0'
+
+services:
+  datapusher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8800:8800"
