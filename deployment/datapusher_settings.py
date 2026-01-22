@@ -1,8 +1,8 @@
 import os
 import uuid
 
-DEBUG = False
-TESTING = False
+DEBUG = True if os.environ.get('DEBUG') else False
+TESTING = True if os.environ.get('TESTING') else False
 SECRET_KEY = str(uuid.uuid4())
 USERNAME = str(uuid.uuid4())
 PASSWORD = str(uuid.uuid4())
