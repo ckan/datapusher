@@ -170,7 +170,7 @@ def chunky(items, num_items_per_chunk):
     Breaks up a list of items into chunks - multiple smaller lists of items.
     The last chunk is flagged up.
 
-    :param items: Size of each chunks
+    :param items: List of items to break into chunks
     :type items: iterable
     :param num_items_per_chunk: Size of each chunks
     :type num_items_per_chunk: int
@@ -220,7 +220,7 @@ def datastore_resource_exists(resource_id, api_key, ckan_url):
         response = requests.post(search_url,
                                  verify=SSL_VERIFY,
                                  data=json.dumps({'id': resource_id,
-                                         'limit': 0}),
+                                                  'limit': 0}),
                                  headers={'Content-Type': 'application/json',
                                           'Authorization': api_key}
                                  )
