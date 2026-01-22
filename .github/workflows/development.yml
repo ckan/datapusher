@@ -1,0 +1,69 @@
+name: Development build
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+    paths:
+      - "**/workflows/**"
+      - "**.py"
+      - "**.ini"
+      - "**.txt"
+      - "Dockerfile"
+
+env:
+  # Registry variables
+  HUB_BASE: ckan
+  GIT_BASE: ghcr.io/ckan
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v3.x
+
+      - name: Download Repository
+        uses: actions/checkout@v2
+
+      # Build the Docker image and push it
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: |
+            /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}-${{ env.GITHUB_SHA_SHORT }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          target: main
+          tags: |
+            ${{ env.GITHUB_REPOSITORY_SLUG }}:${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}
+          load: true
+          cache-from: type=registry,ref=${{ env.GIT_BASE }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}:${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}
+          cache-to: type=inline
+
+      - name: Run ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }} tests
+        run: |
+          docker run -d -p 127.0.0.1:8800:8800 --name datapusher ${{ env.GITHUB_REPOSITORY_SLUG }}:${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}
+          docker ps | grep -q datapusher
